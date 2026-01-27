@@ -1,6 +1,9 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
+import { clearUserRole, getUserRole, UserRole } from "@/utils/userRole";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
     ScrollView,
     StyleSheet,
@@ -11,9 +14,25 @@ import {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
 
-  const handleLogout = () => {
-    // Add logout logic here
+  useEffect(() => {
+    loadUserRole();
+  }, []);
+
+  const loadUserRole = async () => {
+    const role = await getUserRole();
+    setUserRole(role);
+  };
+
+  const handleLogout = async () => {
+    // Clear all user data
+    try {
+      await clearUserRole();
+      await AsyncStorage.removeItem("onboarding_completed");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
     router.replace("/auth/login");
   };
 
@@ -28,10 +47,26 @@ export default function ProfileScreen() {
         {/* User Info Card */}
         <View style={styles.userCard}>
           <View style={styles.avatarContainer}>
-            <MaterialIcons name="person" size={48} color={Colors.primary} />
+            <MaterialIcons
+              name={userRole === "student" ? "school" : "person"}
+              size={48}
+              color={Colors.primary}
+            />
           </View>
           <Text style={styles.userName}>John Doe</Text>
           <Text style={styles.userEmail}>john.doe@example.com</Text>
+          {userRole && (
+            <View style={styles.roleBadge}>
+              <MaterialIcons
+                name={userRole === "student" ? "school" : "person"}
+                size={16}
+                color={Colors.surface}
+              />
+              <Text style={styles.roleBadgeText}>
+                {userRole === "student" ? "Student" : "Teacher"}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Menu Items */}
@@ -127,6 +162,21 @@ const styles = StyleSheet.create({
   userEmail: {
     ...Typography.body,
     color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
+  roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    gap: Spacing.xs,
+  },
+  roleBadgeText: {
+    ...Typography.small,
+    color: Colors.surface,
+    fontWeight: "600",
   },
   menuSection: {
     backgroundColor: Colors.surface,

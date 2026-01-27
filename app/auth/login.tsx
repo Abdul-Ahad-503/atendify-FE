@@ -13,15 +13,25 @@ import {
     View,
 } from "react-native";
 
+type Role = "student" | "teacher";
+
 export default function LoginScreen() {
   const router = useRouter();
+  const [role, setRole] = useState<Role>("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     // Add authentication logic here
-    console.log("Login with:", email, password);
+    console.log("Login with:", email, password, "as", role);
+
+    // Store user role for later use
+    try {
+      await AsyncStorage.setItem("user_role", role);
+    } catch (error) {
+      console.error("Error saving user role:", error);
+    }
 
     // Check if user has completed onboarding
     try {
@@ -58,6 +68,56 @@ export default function LoginScreen() {
 
         {/* Login Form */}
         <View style={styles.form}>
+          {/* Role Selection */}
+          <View>
+            <Text style={styles.label}>Login As</Text>
+            <View style={styles.roleContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.roleButton,
+                  role === "student" && styles.roleButtonActive,
+                ]}
+                onPress={() => setRole("student")}
+              >
+                <MaterialIcons
+                  name="school"
+                  size={24}
+                  color={role === "student" ? Colors.surface : Colors.icon}
+                />
+                <Text
+                  style={[
+                    styles.roleText,
+                    role === "student" && styles.roleTextActive,
+                  ]}
+                >
+                  Student
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.roleButton,
+                  role === "teacher" && styles.roleButtonActive,
+                ]}
+                onPress={() => setRole("teacher")}
+              >
+                <MaterialIcons
+                  name="person"
+                  size={24}
+                  color={role === "teacher" ? Colors.surface : Colors.icon}
+                />
+                <Text
+                  style={[
+                    styles.roleText,
+                    role === "teacher" && styles.roleTextActive,
+                  ]}
+                >
+                  Teacher
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.inputContainer}>
             <MaterialIcons
               name="email"
@@ -162,6 +222,41 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: Spacing.md,
+  },
+  label: {
+    ...Typography.body,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  roleContainer: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  roleButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.button,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  roleButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roleText: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "500",
+  },
+  roleTextActive: {
+    color: Colors.surface,
   },
   inputContainer: {
     flexDirection: "row",

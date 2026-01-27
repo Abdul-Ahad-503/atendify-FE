@@ -14,17 +14,34 @@ import {
     View,
 } from "react-native";
 
+type Role = "student" | "teacher";
+
 export default function SignupScreen() {
   const router = useRouter();
+  const [role, setRole] = useState<Role>("student");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [studentId, setStudentId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [department, setDepartment] = useState("");
+  const [course, setCourse] = useState("");
+  const [semester, setSemester] = useState("");
 
   const handleSignup = async () => {
     // Add registration logic here
-    console.log("Signup with:", name, email, password);
+    const userData = {
+      role,
+      name,
+      email,
+      password,
+      ...(role === "student"
+        ? { studentId, department, course, semester }
+        : { employeeId, department }),
+    };
+    console.log("Signup with:", userData);
 
     // New user, show permissions setup
     try {
@@ -57,6 +74,57 @@ export default function SignupScreen() {
 
           {/* Signup Form */}
           <View style={styles.form}>
+            {/* Role Selection */}
+            <View>
+              <Text style={styles.label}>Select Role</Text>
+              <View style={styles.roleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    role === "student" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole("student")}
+                >
+                  <MaterialIcons
+                    name="school"
+                    size={24}
+                    color={role === "student" ? Colors.surface : Colors.icon}
+                  />
+                  <Text
+                    style={[
+                      styles.roleText,
+                      role === "student" && styles.roleTextActive,
+                    ]}
+                  >
+                    Student
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    role === "teacher" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole("teacher")}
+                >
+                  <MaterialIcons
+                    name="person"
+                    size={24}
+                    color={role === "teacher" ? Colors.surface : Colors.icon}
+                  />
+                  <Text
+                    style={[
+                      styles.roleText,
+                      role === "teacher" && styles.roleTextActive,
+                    ]}
+                  >
+                    Teacher
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Full Name */}
             <View style={styles.inputContainer}>
               <MaterialIcons
                 name="person"
@@ -73,6 +141,7 @@ export default function SignupScreen() {
               />
             </View>
 
+            {/* Email */}
             <View style={styles.inputContainer}>
               <MaterialIcons
                 name="email"
@@ -91,6 +160,79 @@ export default function SignupScreen() {
               />
             </View>
 
+            {/* Student ID or Employee ID */}
+            <View style={styles.inputContainer}>
+              <MaterialIcons
+                name="badge"
+                size={20}
+                color={Colors.icon}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder={role === "student" ? "Student ID" : "Employee ID"}
+                placeholderTextColor={Colors.textSecondary}
+                value={role === "student" ? studentId : employeeId}
+                onChangeText={role === "student" ? setStudentId : setEmployeeId}
+              />
+            </View>
+
+            {/* Department */}
+            <View style={styles.inputContainer}>
+              <MaterialIcons
+                name="business"
+                size={20}
+                color={Colors.icon}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Department"
+                placeholderTextColor={Colors.textSecondary}
+                value={department}
+                onChangeText={setDepartment}
+              />
+            </View>
+
+            {/* Course & Semester (Student only) */}
+            {role === "student" && (
+              <>
+                <View style={styles.inputContainer}>
+                  <MaterialIcons
+                    name="book"
+                    size={20}
+                    color={Colors.icon}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Course"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={course}
+                    onChangeText={setCourse}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <MaterialIcons
+                    name="calendar-today"
+                    size={20}
+                    color={Colors.icon}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Semester"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={semester}
+                    onChangeText={setSemester}
+                    keyboardType="number-pad"
+                  />
+                </View>
+              </>
+            )}
+
+            {/* Password */}
             <View style={styles.inputContainer}>
               <MaterialIcons
                 name="lock"
@@ -115,6 +257,7 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Confirm Password */}
             <View style={styles.inputContainer}>
               <MaterialIcons
                 name="lock"
@@ -197,6 +340,41 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: Spacing.md,
+  },
+  label: {
+    ...Typography.body,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  roleContainer: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  roleButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.button,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  roleButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roleText: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "500",
+  },
+  roleTextActive: {
+    color: Colors.surface,
   },
   inputContainer: {
     flexDirection: "row",

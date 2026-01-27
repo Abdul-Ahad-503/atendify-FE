@@ -1,8 +1,21 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
+import { getUserRole, UserRole } from "@/utils/userRole";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+
+  useEffect(() => {
+    loadUserRole();
+  }, []);
+
+  const loadUserRole = async () => {
+    const role = await getUserRole();
+    setUserRole(role);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -10,11 +23,45 @@ export default function HomeScreen() {
           <MaterialIcons name="location-on" size={32} color={Colors.primary} />
         </View>
         <Text style={styles.headerTitle}>GeoAttend</Text>
+        {userRole && (
+          <View style={styles.roleBadge}>
+            <MaterialIcons
+              name={userRole === "student" ? "school" : "person"}
+              size={16}
+              color={Colors.primary}
+            />
+            <Text style={styles.roleBadgeText}>
+              {userRole === "student" ? "Student" : "Teacher"}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome to GeoAttend</Text>
-        <Text style={styles.subtitle}>Location-Based Attendance System</Text>
+        {userRole === "student" ? (
+          <>
+            <MaterialIcons name="school" size={64} color={Colors.primary} />
+            <Text style={styles.title}>Student Dashboard</Text>
+            <Text style={styles.subtitle}>
+              Track your attendance and view your records
+            </Text>
+          </>
+        ) : userRole === "teacher" ? (
+          <>
+            <MaterialIcons name="person" size={64} color={Colors.secondary} />
+            <Text style={styles.title}>Teacher Dashboard</Text>
+            <Text style={styles.subtitle}>
+              Manage classes and track student attendance
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>Welcome to GeoAttend</Text>
+            <Text style={styles.subtitle}>
+              Location-Based Attendance System
+            </Text>
+          </>
+        )}
       </View>
     </View>
   );
@@ -47,6 +94,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...Typography.h2,
     color: Colors.textPrimary,
+    flex: 1,
+  },
+  roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    gap: Spacing.xs,
+  },
+  roleBadgeText: {
+    ...Typography.small,
+    color: Colors.primary,
+    fontWeight: "600",
   },
   content: {
     flex: 1,
