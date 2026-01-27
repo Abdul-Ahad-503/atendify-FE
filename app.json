@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "GeoAttend needs your location to verify attendance when you're in the classroom.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "GeoAttend needs background location access to automatically track attendance even when the app is closed.",
+        "NSLocationAlwaysUsageDescription": "GeoAttend needs background location access to automatically track attendance even when the app is closed."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +24,14 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
     },
     "web": {
       "output": "static",
@@ -27,6 +39,16 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow GeoAttend to use your location to verify attendance.",
+          "locationAlwaysPermission": "Allow GeoAttend to use your location for automatic attendance tracking.",
+          "locationWhenInUsePermission": "Allow GeoAttend to use your location to verify attendance.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
