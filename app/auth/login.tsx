@@ -95,7 +95,7 @@ export default function LoginScreen() {
               color={Colors.primary}
             />
           </View>
-          <Text style={styles.appName}>GeoAttend</Text>
+          <Text style={styles.appName}>Atendify</Text>
           <Text style={styles.tagline}>Location-Based Attendance</Text>
 
           {/* Login Form */}

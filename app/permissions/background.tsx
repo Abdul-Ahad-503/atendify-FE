@@ -113,7 +113,7 @@ export default function BackgroundPermissionScreen() {
 
           <Text style={styles.title}>Background Location</Text>
           <Text style={styles.description}>
-            Allow GeoAttend to access your location even when the app is closed
+            Allow Atendify to access your location even when the app is closed
             or not in use. This enables automatic attendance tracking.
           </Text>
 

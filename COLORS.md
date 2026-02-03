@@ -1,4 +1,4 @@
-# AttendX Color Palette Quick Reference
+# Atendify Color Palette Quick Reference
 
 ## Primary Colors
 

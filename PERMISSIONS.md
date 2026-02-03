@@ -2,7 +2,7 @@
 
 ## Overview
 
-GeoAttend implements a comprehensive 4-step permission setup flow that appears after first login or signup. This ensures all necessary permissions are granted for reliable location-based attendance tracking.
+Atendify implements a comprehensive 4-step permission setup flow that appears after first login or signup. This ensures all necessary permissions are granted for reliable location-based attendance tracking.
 
 ## Permission Flow
 

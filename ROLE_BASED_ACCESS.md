@@ -2,7 +2,7 @@
 
 ## Overview
 
-GeoAttend now supports two user roles: **Student** and **Teacher**, with different screens and features for each role.
+Atendify now supports two user roles: **Student** and **Teacher**, with different screens and features for each role.
 
 ## Features Implemented
 

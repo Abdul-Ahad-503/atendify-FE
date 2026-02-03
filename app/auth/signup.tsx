@@ -132,7 +132,7 @@ export default function SignupScreen() {
               />
             </View>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join GeoAttend today</Text>
+            <Text style={styles.subtitle}>Join Atendify today</Text>
 
             {/* Signup Form */}
             <View style={styles.form}>

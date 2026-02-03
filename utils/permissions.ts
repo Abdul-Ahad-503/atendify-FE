@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 
 /**
- * Permission utility functions for GeoAttend app
+ * Permission utility functions for Atendify app
  */
 
 export const PermissionStatus = {

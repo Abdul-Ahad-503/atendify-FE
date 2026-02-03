@@ -49,7 +49,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.content}>
-          <Text style={styles.title}>Welcome to AttendX</Text>
+          <Text style={styles.title}>Welcome to Atendify</Text>
           <Text style={styles.subtitle}>Location-Based Attendance System</Text>
         </View>
       </SafeAreaView>
@@ -65,7 +65,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.content}>
-        <Text style={styles.title}>Welcome to AttendX</Text>
+        <Text style={styles.title}>Welcome to Atendify</Text>
         <Text style={styles.subtitle}>Location-Based Attendance System</Text>
       </View>
     </SafeAreaView>

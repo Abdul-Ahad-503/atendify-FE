@@ -297,7 +297,7 @@ export default function ProfileScreen() {
 
           <TouchableOpacity style={styles.menuItem}>
             <MaterialIcons name="info" size={24} color={Colors.icon} />
-            <Text style={styles.menuText}>About GeoAttend</Text>
+            <Text style={styles.menuText}>About Atendify</Text>
             <MaterialIcons name="chevron-right" size={24} color={Colors.icon} />
           </TouchableOpacity>
         </View>
@@ -309,7 +309,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <View style={styles.versionInfo}>
-          <Text style={styles.versionText}>GeoAttend v1.0.2</Text>
+          <Text style={styles.versionText}>Atendify v1.0.2</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

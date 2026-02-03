@@ -28,7 +28,7 @@ export default function SplashScreen() {
       </View>
 
       {/* App Name */}
-      <Text style={styles.appName}>GeoAttend</Text>
+      <Text style={styles.appName}>Atendify</Text>
 
       {/* Tagline */}
       <Text style={styles.tagline}>Location-Based Attendance</Text>

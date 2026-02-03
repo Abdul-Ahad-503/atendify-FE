@@ -1,5 +1,5 @@
 /**
- * AttendX Design System
+ * Atendify Design System
  * Based on design.md configuration
  */
 

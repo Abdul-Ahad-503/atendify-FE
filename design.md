@@ -1,4 +1,4 @@
-# AttendX Design System
+# Atendify Design System
 
 ## 1. Color Scheme (Modern & Professional)
 

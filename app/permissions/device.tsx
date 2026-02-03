@@ -25,7 +25,7 @@ export default function DevicePermissionScreen() {
 
       Alert.alert(
         "Setup Complete!",
-        "All permissions have been configured. You can now use GeoAttend to track your attendance.",
+        "All permissions have been configured. You can now use Atendify to track your attendance.",
         [
           {
             text: "Get Started",
@@ -92,7 +92,7 @@ export default function DevicePermissionScreen() {
 
           <Text style={styles.title}>Device Information</Text>
           <Text style={styles.description}>
-            GeoAttend needs to access basic device information to ensure
+            Atendify needs to access basic device information to ensure
             attendance accuracy and prevent fraudulent check-ins.
           </Text>
 

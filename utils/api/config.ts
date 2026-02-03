@@ -10,18 +10,20 @@
 // 4. For Production: use your deployed backend URL
 
 export const API_CONFIG = {
-  // Default for Android emulator - Change this based on your setup
-  BASE_URL: __DEV__ 
-    ? 'http://10.0.2.2:5000/api'  // Development
-    : 'https://your-production-api.com/api',  // Production
-  
+  // IMPORTANT: Using your computer's IP for physical device
+  // Your Computer IP: 192.168.1.5
+  // Make sure your phone and computer are on the SAME WiFi network!
+  BASE_URL: __DEV__
+    ? "http://192.168.1.5:5000/api" // Physical Device - Your Computer's IP
+    : "https://your-production-api.com/api", // Production
+
   TIMEOUT: 30000, // 30 seconds
 };
 
 // Token storage keys
 export const STORAGE_KEYS = {
-  TOKEN: 'auth_token',
-  USER: 'user_data',
-  USER_ROLE: 'user_role',
-  ONBOARDING_COMPLETED: 'onboarding_completed',
+  TOKEN: "auth_token",
+  USER: "user_data",
+  USER_ROLE: "user_role",
+  ONBOARDING_COMPLETED: "onboarding_completed",
 };

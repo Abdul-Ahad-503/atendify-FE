@@ -1,4 +1,4 @@
-# AttendX Project Setup - Completed
+# Atendify Project Setup - Completed
 
 ## ✅ Tasks Completed
 
@@ -6,7 +6,7 @@
 
 - **File**: [app/splash.tsx](app/splash.tsx)
 - **Features**:
-  - GeoAttend logo with location icon
+  - Atendify logo with location icon
   - App name and tagline
   - Loading indicator
   - Version display
@@ -103,7 +103,7 @@ myApp/
 
 ## 🎨 Design System Applied
 
-All screens now use the AttendX design system:
+All screens now use the Atendify design system:
 
 - ✅ Primary Color: #2563EB
 - ✅ Secondary Color: #14B8A6

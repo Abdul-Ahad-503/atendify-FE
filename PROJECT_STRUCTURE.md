@@ -1,4 +1,4 @@
-# AttendX - GeoAttend
+# Atendify
 
 Location-Based Attendance System built with React Native and Expo.
 
@@ -8,7 +8,7 @@ Location-Based Attendance System built with React Native and Expo.
 myApp/
 ├── app/
 │   ├── _layout.tsx           # Root layout with navigation setup
-│   ├── splash.tsx            # Splash screen with GeoAttend branding
+│   ├── splash.tsx            # Splash screen with Atendify branding
 │   ├── auth/
 │   │   ├── login.tsx         # Login screen
 │   │   └── signup.tsx        # Signup/registration screen
@@ -82,7 +82,7 @@ npm run web
 
 ## Features
 
-- ✅ Splash screen with GeoAttend branding
+- ✅ Splash screen with Atendify branding
 - ✅ Clean authentication flow (Login/Signup)
 - ✅ Tab-based navigation
 - ✅ Design system implementation

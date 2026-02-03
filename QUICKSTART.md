@@ -1,4 +1,4 @@
-# AttendX - Quick Start Guide
+# Atendify - Quick Start Guide
 
 ## 🚀 Getting Started
 
@@ -40,7 +40,7 @@ Main App (Tabs)
 ### ✅ Splash Screen
 
 - Location: `app/splash.tsx`
-- Branding with GeoAttend logo
+- Branding with Atendify logo
 - 3-second automatic transition to login
 
 ### ✅ Authentication

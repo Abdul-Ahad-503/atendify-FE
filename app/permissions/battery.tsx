@@ -23,7 +23,7 @@ export default function BatteryPermissionScreen() {
     if (Platform.OS === "android") {
       Alert.alert(
         "Battery Optimization",
-        "Please disable battery optimization for GeoAttend to ensure reliable background location tracking.",
+        "Please disable battery optimization for Atendify to ensure reliable background location tracking.",
         [
           {
             text: "Open Settings",
@@ -104,7 +104,7 @@ export default function BatteryPermissionScreen() {
 
           <Text style={styles.title}>Battery Optimization</Text>
           <Text style={styles.description}>
-            Disable battery optimization for GeoAttend to ensure the app can
+            Disable battery optimization for Atendify to ensure the app can
             track your location reliably in the background without
             interruptions.
           </Text>

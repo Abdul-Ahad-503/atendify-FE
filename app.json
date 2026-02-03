@@ -11,9 +11,9 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "GeoAttend needs your location to verify attendance when you're in the classroom.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "GeoAttend needs background location access to automatically track attendance even when the app is closed.",
-        "NSLocationAlwaysUsageDescription": "GeoAttend needs background location access to automatically track attendance even when the app is closed."
+        "NSLocationWhenInUseUsageDescription": "Atendify needs your location to verify attendance when you're in the classroom.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Atendify needs background location access to automatically track attendance even when the app is closed.",
+        "NSLocationAlwaysUsageDescription": "Atendify needs background location access to automatically track attendance even when the app is closed."
       }
     },
     "android": {
@@ -42,9 +42,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow GeoAttend to use your location to verify attendance.",
-          "locationAlwaysPermission": "Allow GeoAttend to use your location for automatic attendance tracking.",
-          "locationWhenInUsePermission": "Allow GeoAttend to use your location to verify attendance.",
+          "locationAlwaysAndWhenInUsePermission": "Allow Atendify to use your location to verify attendance.",
+          "locationAlwaysPermission": "Allow Atendify to use your location for automatic attendance tracking.",
+          "locationWhenInUsePermission": "Allow Atendify to use your location to verify attendance.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
         }

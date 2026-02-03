@@ -139,4 +139,4 @@ After permissions are granted:
 - AsyncStorage tracks onboarding completion
 - Background location requires foreground first
 - Battery optimization is Android-specific
-- All screens follow GeoAttend design system
+- All screens follow Atendify design system
