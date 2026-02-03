@@ -1,9 +1,12 @@
 import { BorderRadius, Colors, Spacing, Typography } from "@/constants/theme";
+import { authApi, STORAGE_KEYS } from "@/utils/api";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
+    Alert,
     KeyboardAvoidingView,
     Platform,
     StyleSheet,
@@ -12,6 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Role = "student" | "teacher";
 
@@ -21,22 +25,44 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    // Add authentication logic here
-    console.log("Login with:", email, password, "as", role);
-
-    // Store user role for later use
-    try {
-      await AsyncStorage.setItem("user_role", role);
-    } catch (error) {
-      console.error("Error saving user role:", error);
+    // Validation
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter email and password");
+      return;
     }
 
-    // Check if user has completed onboarding
+    if (!email.includes("@")) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
+    setLoading(true);
+
     try {
+      // Call login API
+      const response = await authApi.login({
+        email: email.trim().toLowerCase(),
+        password: password,
+      });
+
+      console.log("Login successful:", response.user.name);
+
+      // Check if role matches
+      if (response.user.role !== role) {
+        Alert.alert(
+          "Wrong Role",
+          `This account is registered as ${response.user.role}. Please select the correct role.`
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Check if user has completed onboarding
       const onboardingCompleted = await AsyncStorage.getItem(
-        "onboarding_completed",
+        STORAGE_KEYS.ONBOARDING_COMPLETED
       );
 
       if (onboardingCompleted === "true") {
@@ -46,141 +72,160 @@ export default function LoginScreen() {
         // First time login, show permissions setup
         router.replace("/permissions/location");
       }
-    } catch (error) {
-      console.error("Error checking onboarding status:", error);
-      // Default to showing permissions on error
-      router.replace("/permissions/location");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert("Login Failed", error.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <MaterialIcons name="location-on" size={48} color={Colors.primary} />
-        </View>
-        <Text style={styles.appName}>GeoAttend</Text>
-        <Text style={styles.tagline}>Location-Based Attendance</Text>
+    <SafeAreaView style={styles.outerContainer} edges={["top"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <View style={styles.content}>
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <MaterialIcons
+              name="location-on"
+              size={48}
+              color={Colors.primary}
+            />
+          </View>
+          <Text style={styles.appName}>GeoAttend</Text>
+          <Text style={styles.tagline}>Location-Based Attendance</Text>
 
-        {/* Login Form */}
-        <View style={styles.form}>
-          {/* Role Selection */}
-          <View>
-            <Text style={styles.label}>Login As</Text>
-            <View style={styles.roleContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  role === "student" && styles.roleButtonActive,
-                ]}
-                onPress={() => setRole("student")}
-              >
-                <MaterialIcons
-                  name="school"
-                  size={24}
-                  color={role === "student" ? Colors.surface : Colors.icon}
-                />
-                <Text
+          {/* Login Form */}
+          <View style={styles.form}>
+            {/* Role Selection */}
+            <View>
+              <Text style={styles.label}>Login As</Text>
+              <View style={styles.roleContainer}>
+                <TouchableOpacity
                   style={[
-                    styles.roleText,
-                    role === "student" && styles.roleTextActive,
+                    styles.roleButton,
+                    role === "student" && styles.roleButtonActive,
                   ]}
+                  onPress={() => setRole("student")}
                 >
-                  Student
-                </Text>
+                  <MaterialIcons
+                    name="school"
+                    size={24}
+                    color={role === "student" ? Colors.surface : Colors.icon}
+                  />
+                  <Text
+                    style={[
+                      styles.roleText,
+                      role === "student" && styles.roleTextActive,
+                    ]}
+                  >
+                    Student
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    role === "teacher" && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole("teacher")}
+                >
+                  <MaterialIcons
+                    name="person"
+                    size={24}
+                    color={role === "teacher" ? Colors.surface : Colors.icon}
+                  />
+                  <Text
+                    style={[
+                      styles.roleText,
+                      role === "teacher" && styles.roleTextActive,
+                    ]}
+                  >
+                    Teacher
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons
+                name="email"
+                size={20}
+                color={Colors.icon}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={Colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <MaterialIcons
+                name="lock"
+                size={20}
+                color={Colors.icon}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={Colors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <MaterialIcons
+                  name={showPassword ? "visibility" : "visibility-off"}
+                  size={20}
+                  color={Colors.icon}
+                />
               </TouchableOpacity>
+            </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  role === "teacher" && styles.roleButtonActive,
-                ]}
-                onPress={() => setRole("teacher")}
-              >
-                <MaterialIcons
-                  name="person"
-                  size={24}
-                  color={role === "teacher" ? Colors.surface : Colors.icon}
-                />
-                <Text
-                  style={[
-                    styles.roleText,
-                    role === "teacher" && styles.roleTextActive,
-                  ]}
-                >
-                  Teacher
-                </Text>
+            <TouchableOpacity>
+              <Text style={styles.forgotPassword}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={Colors.surface} />
+              ) : (
+                <Text style={styles.loginButtonText}>Login</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push("/auth/signup")}>
+                <Text style={styles.signupLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.inputContainer}>
-            <MaterialIcons
-              name="email"
-              size={20}
-              color={Colors.icon}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={Colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <MaterialIcons
-              name="lock"
-              size={20}
-              color={Colors.icon}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={Colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <MaterialIcons
-                name={showPassword ? "visibility" : "visibility-off"}
-                size={20}
-                color={Colors.icon}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity>
-            <Text style={styles.forgotPassword}>Forgot Password?</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
-
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push("/auth/signup")}>
-              <Text style={styles.signupLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -288,6 +333,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: Spacing.md,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
   },
   loginButtonText: {
     ...Typography.body,

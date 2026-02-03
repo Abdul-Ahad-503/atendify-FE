@@ -11,6 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DevicePermissionScreen() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function DevicePermissionScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Setup Permissions</Text>
@@ -182,7 +183,7 @@ export default function DevicePermissionScreen() {
           <Text style={styles.completeButtonText}>Complete Setup</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

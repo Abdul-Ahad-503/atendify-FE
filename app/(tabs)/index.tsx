@@ -1,69 +1,463 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
-import { getUserRole, UserRole } from "@/utils/userRole";
+import { authApi, dashboardApi, User, StudentDashboard as StudentDashboardType, TeacherDashboard as TeacherDashboardType } from "@/utils/api";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import {
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    loadUserRole();
+    loadUser();
   }, []);
 
-  const loadUserRole = async () => {
-    const role = await getUserRole();
-    setUserRole(role);
+  const loadUser = async () => {
+    try {
+      const userData = await authApi.getMe();
+      setUser(userData);
+    } catch (error) {
+      console.error("Error loading user:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <MaterialIcons name="location-on" size={32} color={Colors.primary} />
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
-        <Text style={styles.headerTitle}>GeoAttend</Text>
-        {userRole && (
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Welcome to AttendX</Text>
+          <Text style={styles.subtitle}>Location-Based Attendance System</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (user.role === "student") {
+    return <StudentDashboard user={user} />;
+  } else if (user.role === "teacher") {
+    return <TeacherDashboard user={user} />;
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Welcome to AttendX</Text>
+        <Text style={styles.subtitle}>Location-Based Attendance System</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+// Student Dashboard Component
+function StudentDashboard({ user }: { user: User }) {
+  const [dashboardData, setDashboardData] = useState<StudentDashboardType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    try {
+      const data = await dashboardApi.getStudentDashboard();
+      setDashboardData(data);
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadDashboard();
+  };
+
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const formatTime = (time: string) => {
+    const date = new Date(`2000-01-01T${time}`);
+    return date.toLocaleTimeString("en-US", { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Hello, {user.name.split(' ')[0]}!</Text>
+            <Text style={styles.date}>{currentDate}</Text>
+          </View>
           <View style={styles.roleBadge}>
-            <MaterialIcons
-              name={userRole === "student" ? "school" : "person"}
-              size={16}
-              color={Colors.primary}
-            />
-            <Text style={styles.roleBadgeText}>
-              {userRole === "student" ? "Student" : "Teacher"}
-            </Text>
+            <MaterialIcons name="school" size={20} color={Colors.primary} />
+            <Text style={styles.roleBadgeText}>Student</Text>
+          </View>
+        </View>
+
+        {/* Today's Classes */}
+        {dashboardData?.todayClasses && dashboardData.todayClasses.length > 0 ? (
+          dashboardData.todayClasses.map((classItem, index) => (
+            <View key={classItem.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <MaterialIcons name="schedule" size={24} color={Colors.primary} />
+                <Text style={styles.cardTitle}>
+                  {index === 0 ? "Current/Next Class" : "Upcoming Class"}
+                </Text>
+              </View>
+              <View style={styles.classInfo}>
+                <Text style={styles.className}>
+                  {typeof classItem.course === 'object' ? classItem.course.courseName : 'Loading...'}
+                </Text>
+                <View style={styles.classDetails}>
+                  <View style={styles.classDetailItem}>
+                    <MaterialIcons name="access-time" size={16} color={Colors.textSecondary} />
+                    <Text style={styles.classDetailText}>
+                      {formatTime(classItem.startTime)} - {formatTime(classItem.endTime)}
+                    </Text>
+                  </View>
+                  <View style={styles.classDetailItem}>
+                    <MaterialIcons name="person" size={16} color={Colors.textSecondary} />
+                    <Text style={styles.classDetailText}>
+                      {typeof classItem.teacher === 'object' ? classItem.teacher.name : 'Teacher'}
+                    </Text>
+                  </View>
+                  <View style={styles.classDetailItem}>
+                    <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
+                    <Text style={styles.classDetailText}>
+                      {classItem.room.roomNumber}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          ))
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.noDataText}>No classes scheduled for today</Text>
           </View>
         )}
-      </View>
 
-      <View style={styles.content}>
-        {userRole === "student" ? (
-          <>
-            <MaterialIcons name="school" size={64} color={Colors.primary} />
-            <Text style={styles.title}>Student Dashboard</Text>
-            <Text style={styles.subtitle}>
-              Track your attendance and view your records
-            </Text>
-          </>
-        ) : userRole === "teacher" ? (
-          <>
-            <MaterialIcons name="person" size={64} color={Colors.secondary} />
-            <Text style={styles.title}>Teacher Dashboard</Text>
-            <Text style={styles.subtitle}>
-              Manage classes and track student attendance
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.title}>Welcome to GeoAttend</Text>
-            <Text style={styles.subtitle}>
-              Location-Based Attendance System
-            </Text>
-          </>
+        {/* Attendance Summary */}
+        {dashboardData?.stats && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="assignment" size={24} color={Colors.primary} />
+              <Text style={styles.cardTitle}>Today's Stats</Text>
+            </View>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <View style={[styles.summaryIcon, { backgroundColor: Colors.success + "20" }]}>
+                  <MaterialIcons name="check" size={32} color={Colors.success} />
+                </View>
+                <Text style={styles.summaryValue}>{dashboardData.stats.presentToday}</Text>
+                <Text style={styles.summaryLabel}>Present Today</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <View style={[styles.summaryIcon, { backgroundColor: Colors.primary + "20" }]}>
+                  <MaterialIcons name="school" size={32} color={Colors.primary} />
+                </View>
+                <Text style={styles.summaryValue}>{dashboardData.stats.totalCourses}</Text>
+                <Text style={styles.summaryLabel}>Total Courses</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <View style={[styles.summaryIcon, { backgroundColor: 
+                  dashboardData.stats.criticalCourses > 0 ? Colors.error + "20" : Colors.success + "20" }]}>
+                  <MaterialIcons name="warning" size={32} color={
+                    dashboardData.stats.criticalCourses > 0 ? Colors.error : Colors.success} />
+                </View>
+                <Text style={styles.summaryValue}>{dashboardData.stats.criticalCourses}</Text>
+                <Text style={styles.summaryLabel}>Critical</Text>
+              </View>
+            </View>
+          </View>
         )}
-      </View>
-    </View>
+
+        {/* Overall Attendance */}
+        {dashboardData?.stats && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="pie-chart" size={24} color={Colors.primary} />
+              <Text style={styles.cardTitle}>Overall Attendance</Text>
+            </View>
+            <View style={styles.percentageContainer}>
+              <Text style={styles.percentageValue}>
+                {dashboardData.stats.averageAttendance.toFixed(0)}%
+              </Text>
+              <Text style={styles.percentageLabel}>Average Attendance</Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${dashboardData.stats.averageAttendance}%` }]} />
+            </View>
+          </View>
+        )}
+
+        {/* Course-wise Attendance */}
+        {dashboardData?.attendanceOverview && dashboardData.attendanceOverview.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="list" size={24} color={Colors.primary} />
+              <Text style={styles.cardTitle}>Course Attendance</Text>
+            </View>
+            {dashboardData.attendanceOverview.slice(0, 3).map((item) => (
+              <View key={item.id} style={styles.courseItem}>
+                <View style={styles.courseInfo}>
+                  <Text style={styles.courseName}>
+                    {typeof item.course === 'object' ? item.course.courseCode : 'Course'}
+                  </Text>
+                  <Text style={styles.courseAttendance}>
+                    {item.classesAttended}/{item.totalClasses} classes
+                  </Text>
+                </View>
+                <Text style={[
+                  styles.coursePercentage,
+                  { color: item.status === 'critical' ? Colors.error : 
+                           item.status === 'warning' ? Colors.warning : Colors.success }
+                ]}>
+                  {item.percentage.toFixed(0)}%
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.actionsGrid}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/timetable')}>
+            <MaterialIcons name="schedule" size={32} color={Colors.primary} />
+            <Text style={styles.actionText}>Timetable</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/statistics')}>
+            <MaterialIcons name="bar-chart" size={32} color={Colors.primary} />
+            <Text style={styles.actionText}>Statistics</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// Teacher Dashboard Component
+function TeacherDashboard({ user }: { user: User }) {
+  const [dashboardData, setDashboardData] = useState<TeacherDashboardType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const loadDashboard = async () => {
+    try {
+      const data = await dashboardApi.getTeacherDashboard();
+      setDashboardData(data);
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadDashboard();
+  };
+
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const formatTime = (time: string) => {
+    const date = new Date(`2000-01-01T${time}`);
+    return date.toLocaleTimeString("en-US", { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.secondary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.secondary]} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Hello, {user.name.split(' ')[0]}!</Text>
+            <Text style={styles.date}>{currentDate}</Text>
+          </View>
+          <View style={[styles.roleBadge, { backgroundColor: Colors.secondary + "20" }]}>
+            <MaterialIcons name="school" size={20} color={Colors.secondary} />
+            <Text style={[styles.roleBadgeText, { color: Colors.secondary }]}>Teacher</Text>
+          </View>
+        </View>
+
+        {/* Active Sessions */}
+        {dashboardData?.activeSessions && dashboardData.activeSessions.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="class" size={24} color={Colors.secondary} />
+              <Text style={styles.cardTitle}>Active Session</Text>
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            </View>
+            {dashboardData.activeSessions.map((session) => (
+              <View key={session.id} style={styles.classInfo}>
+                <Text style={styles.className}>
+                  {typeof session.course === 'object' ? session.course.courseName : 'Class'}
+                </Text>
+                <View style={styles.classDetails}>
+                  <View style={styles.classDetailItem}>
+                    <MaterialIcons name="access-time" size={16} color={Colors.textSecondary} />
+                    <Text style={styles.classDetailText}>
+                      Started at {new Date(session.startTime).toLocaleTimeString('en-US', { 
+                        hour: 'numeric', minute: '2-digit', hour12: true 
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.classDetailItem}>
+                    <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
+                    <Text style={styles.classDetailText}>{session.room.roomNumber}</Text>
+                  </View>
+                  <View style={styles.classDetailItem}>
+                    <MaterialIcons name="people" size={16} color={Colors.textSecondary} />
+                    <Text style={styles.classDetailText}>
+                      {session.totalPresent || 0}/{session.totalStudentsEnrolled} Present
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Today's Classes */}
+        {dashboardData?.todayClasses && dashboardData.todayClasses.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="today" size={24} color={Colors.secondary} />
+              <Text style={styles.cardTitle}>Today's Classes</Text>
+            </View>
+            <View style={styles.classList}>
+              {dashboardData.todayClasses.map((classItem) => (
+                <View key={classItem.id} style={styles.classListItem}>
+                  <View style={styles.classTime}>
+                    <Text style={styles.classTimeText}>{formatTime(classItem.startTime)}</Text>
+                    <View style={styles.classTimeLine} />
+                  </View>
+                  <View style={[styles.classCard, { borderLeftColor: Colors.primary }]}>
+                    <Text style={styles.classCardTitle}>
+                      {typeof classItem.course === 'object' ? classItem.course.courseName : 'Class'}
+                    </Text>
+                    <Text style={styles.classCardInfo}>
+                      {classItem.room.roomNumber}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Quick Stats */}
+        {dashboardData?.stats && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="assessment" size={24} color={Colors.secondary} />
+              <Text style={styles.cardTitle}>Quick Stats</Text>
+            </View>
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{dashboardData.stats.totalCourses}</Text>
+                <Text style={styles.statLabel}>Courses</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{dashboardData.stats.totalStudents}</Text>
+                <Text style={styles.statLabel}>Students</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{dashboardData.stats.classesToday}</Text>
+                <Text style={styles.statLabel}>Classes Today</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <View style={styles.actionsGrid}>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/timetable')}>
+            <MaterialIcons name="class" size={32} color={Colors.secondary} />
+            <Text style={styles.actionText}>My Classes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/statistics')}>
+            <MaterialIcons name="bar-chart" size={32} color={Colors.secondary} />
+            <Text style={styles.actionText}>Reports</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -72,34 +466,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  header: {
-    flexDirection: "row",
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  loadingText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+  },
+  header: {
+    padding: Spacing.lg,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
-  logoContainer: {
-    width: 48,
-    height: 48,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginRight: Spacing.md,
-  },
-  headerTitle: {
+  greeting: {
     ...Typography.h2,
     color: Colors.textPrimary,
-    flex: 1,
+    marginBottom: Spacing.xs,
+  },
+  date: {
+    ...Typography.small,
+    color: Colors.textSecondary,
   },
   roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.primary + "20",
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: 20,
@@ -109,6 +507,227 @@ const styles = StyleSheet.create({
     ...Typography.small,
     color: Colors.primary,
     fontWeight: "600",
+  },
+  card: {
+    backgroundColor: Colors.surface,
+    margin: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  cardTitle: {
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  liveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.error + "20",
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.error,
+  },
+  liveText: {
+    ...Typography.small,
+    color: Colors.error,
+    fontWeight: "700",
+    fontSize: 10,
+  },
+  classInfo: {
+    gap: Spacing.md,
+  },
+  className: {
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+  },
+  classDetails: {
+    gap: Spacing.sm,
+  },
+  classDetailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  classDetailText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+  },
+  summaryGrid: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: Spacing.md,
+  },
+  summaryItem: {
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  summaryIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  summaryValue: {
+    ...Typography.h1,
+    color: Colors.textPrimary,
+    fontWeight: "700",
+  },
+  summaryLabel: {
+    ...Typography.small,
+    color: Colors.textSecondary,
+  },
+  percentageContainer: {
+    alignItems: "center",
+    marginVertical: Spacing.lg,
+  },
+  percentageValue: {
+    ...Typography.h1,
+    fontSize: 48,
+    color: Colors.primary,
+    fontWeight: "700",
+  },
+  percentageLabel: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
+  },
+  progressBar: {
+    height: 12,
+    backgroundColor: Colors.border,
+    borderRadius: 6,
+    overflow: "hidden",
+    marginBottom: Spacing.md,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: Colors.primary,
+  },
+  courseItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  courseInfo: {
+    flex: 1,
+  },
+  courseName: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+    marginBottom: Spacing.xs,
+  },
+  courseAttendance: {
+    ...Typography.small,
+    color: Colors.textSecondary,
+  },
+  coursePercentage: {
+    ...Typography.h3,
+    fontWeight: "700",
+  },
+  actionsGrid: {
+    flexDirection: "row",
+    padding: Spacing.md,
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  actionCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: 12,
+    alignItems: "center",
+    gap: Spacing.sm,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionText: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+  },
+  classList: {
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  classListItem: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  classTime: {
+    alignItems: "center",
+    width: 80,
+  },
+  classTimeText: {
+    ...Typography.small,
+    color: Colors.textSecondary,
+    fontWeight: "600",
+  },
+  classTimeLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.sm,
+  },
+  classCard: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    padding: Spacing.md,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+  },
+  classCardTitle: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+    marginBottom: Spacing.xs,
+  },
+  classCardInfo: {
+    ...Typography.small,
+    color: Colors.textSecondary,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: Spacing.md,
+  },
+  statItem: {
+    alignItems: "center",
+  },
+  statValue: {
+    ...Typography.h1,
+    color: Colors.textPrimary,
+    fontWeight: "700",
+    marginBottom: Spacing.xs,
+  },
+  statLabel: {
+    ...Typography.small,
+    color: Colors.textSecondary,
   },
   content: {
     flex: 1,
@@ -126,5 +745,11 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
     textAlign: "center",
+  },
+  noDataText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    padding: Spacing.lg,
   },
 });

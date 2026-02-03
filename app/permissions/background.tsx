@@ -9,8 +9,9 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function BackgroundPermissionScreen() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function BackgroundPermissionScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Setup Permissions</Text>
@@ -172,7 +173,7 @@ export default function BackgroundPermissionScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

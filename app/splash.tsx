@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="light" />
 
       {/* Logo Container */}
@@ -39,7 +40,7 @@ export default function SplashScreen() {
 
       {/* Version */}
       <Text style={styles.version}>v1.0.2 - Initializing...</Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
