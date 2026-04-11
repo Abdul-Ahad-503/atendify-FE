@@ -4,14 +4,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -275,6 +275,35 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Teacher-Only Actions */}
+        {user.role === "teacher" && (
+          <View style={styles.teacherActionSection}>
+            <Text style={styles.sectionTitle}>Teacher Actions</Text>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => router.push("/teacher/add-course-offering" as any)}
+            >
+              <MaterialIcons
+                name="add-circle"
+                size={24}
+                color={Colors.primary}
+              />
+              <View style={styles.actionButtonContent}>
+                <Text style={styles.actionButtonText}>Add Course Offering</Text>
+                <Text style={styles.actionButtonDescription}>
+                  Create a new course offering with timetable
+                </Text>
+              </View>
+              <MaterialIcons
+                name="chevron-right"
+                size={24}
+                color={Colors.icon}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Menu Items */}
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
@@ -537,5 +566,37 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.surface,
     fontWeight: "600",
+  },
+  teacherActionSection: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: Spacing.md,
+  },
+  actionButtonContent: {
+    flex: 1,
+  },
+  actionButtonText: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  actionButtonDescription: {
+    ...Typography.small,
+    color: Colors.textSecondary,
   },
 });

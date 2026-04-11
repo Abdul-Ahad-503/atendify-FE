@@ -11,10 +11,10 @@
 
 export const API_CONFIG = {
   // IMPORTANT: Using your computer's IP for physical device
-  // Your Computer IP: 192.168.1.5
+  // Your Computer IP: 192.168.100.23
   // Make sure your phone and computer are on the SAME WiFi network!
   BASE_URL: __DEV__
-    ? "http://192.168.1.5:5000/api" // Physical Device - Your Computer's IP
+    ? "http://192.168.100.23:5000/api" // Physical Device - Your Computer's IP
     : "https://your-production-api.com/api", // Production
 
   TIMEOUT: 30000, // 30 seconds

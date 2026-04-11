@@ -1,97 +1,200 @@
 import { BorderRadius, Colors, Spacing, Typography } from "@/constants/theme";
 import { authApi, STORAGE_KEYS } from "@/utils/api";
+import type { RegisterRequest } from "@/utils/api/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Role = "student" | "teacher";
 
+type Department = {
+  id: string;
+  name: string;
+  code: string;
+};
+
+type ProgramOption = {
+  id: string;
+  name: string;
+  code: string;
+  departmentId: string;
+};
+
+const SAMPLE_DEPARTMENTS: Department[] = [
+  { id: "CS", name: "Computer Science", code: "CS" },
+  { id: "DEE", name: "Electrical Engineering", code: "DEE" },
+  { id: "DBA", name: "Business Administration", code: "DBA" },
+];
+
+const SAMPLE_PROGRAMS: ProgramOption[] = [
+  {
+    id: "BSCS",
+    name: "BS Computer Science",
+    code: "BSCS",
+    departmentId: "CS",
+  },
+  {
+    id: "BSAI",
+    name: "BS Artificial Intelligence",
+    code: "BSAI",
+    departmentId: "CS",
+  },
+  {
+    id: "BSSE",
+    name: "BS Software Engineering",
+    code: "BSSE",
+    departmentId: "CS",
+  },
+  {
+    id: "BSEE",
+    name: "BS Electrical Engineering",
+    code: "BSEE",
+    departmentId: "DEE",
+  },
+  {
+    id: "BBA",
+    name: "Bachelor of Business Administration",
+    code: "BBA",
+    departmentId: "DBA",
+  },
+];
+
+const SECTION_OPTIONS = ["A", "B", "C"];
+const SHIFT_OPTIONS: Array<"MORNING" | "EVENING"> = ["MORNING", "EVENING"];
+const SEMESTER_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+
 export default function SignupScreen() {
   const router = useRouter();
+
   const [role, setRole] = useState<Role>("student");
+
+  // Common
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+
+  // IMPORTANT:
+  // We keep sending departmentId/programId as codes like "CS" / "BSCS"
+  // because backend resolveDepartmentRef/resolveProgramRef supports code values.
+  const [departmentId, setDepartmentId] = useState<string>("");
+  const [programId, setProgramId] = useState<string>("");
+
+  // Auth
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Student
   const [rollNumber, setRollNumber] = useState("");
+  const [semester, setSemester] = useState<number>(1);
+  const [section, setSection] = useState<string>("A");
+  const [shift, setShift] = useState<"MORNING" | "EVENING">("MORNING");
+
+  // Teacher
   const [employeeId, setEmployeeId] = useState("");
-  const [department, setDepartment] = useState("");
-  const [course, setCourse] = useState("");
-  const [semester, setSemester] = useState("");
+
+  // Dropdown data
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [programs, setPrograms] = useState<ProgramOption[]>([]);
+
   const [loading, setLoading] = useState(false);
+  const [loadingMeta, setLoadingMeta] = useState(true);
+
+  useEffect(() => {
+    loadMeta();
+  }, []);
+
+  // When department changes, clear program selection (optional UX)
+  useEffect(() => {
+    setProgramId("");
+  }, [departmentId]);
+
+  const loadMeta = async () => {
+    setLoadingMeta(true);
+    try {
+      setDepartments(SAMPLE_DEPARTMENTS);
+      setPrograms(SAMPLE_PROGRAMS);
+    } catch (e) {
+      setDepartments(SAMPLE_DEPARTMENTS);
+      setPrograms(SAMPLE_PROGRAMS);
+    } finally {
+      setLoadingMeta(false);
+    }
+  };
+
+  const validate = (): string | null => {
+    if (!name.trim()) return "Please enter your name";
+    if (!email.trim()) return "Please enter your email";
+    if (!email.includes("@")) return "Please enter a valid email address";
+    if (password.length < 6)
+      return "Password must be at least 6 characters long";
+    if (password !== confirmPassword) return "Passwords do not match";
+
+    // Backend expects code values in departmentId/programId (e.g. CS/BSCS)
+    if (!departmentId) return "Please select a department";
+
+    if (role === "student") {
+      if (!programId) return "Please select a program";
+      if (!rollNumber.trim()) return "Please enter your roll number";
+      if (!semester) return "Please select your semester";
+      if (!section) return "Please select your section";
+      if (!shift) return "Please select your shift";
+    }
+
+    if (role === "teacher") {
+      if (!employeeId.trim()) return "Please enter your employee ID";
+    }
+
+    return null;
+  };
 
   const handleSignup = async () => {
-    // Validation
-    if (!name || !email || !password || !department) {
-      Alert.alert("Error", "Please fill in all required fields");
-      return;
-    }
-
-    if (role === "student" && !rollNumber) {
-      Alert.alert("Error", "Please enter your roll number");
-      return;
-    }
-
-    if (role === "teacher" && !employeeId) {
-      Alert.alert("Error", "Please enter your employee ID");
-      return;
-    }
-
-    if (!email.includes("@")) {
-      Alert.alert("Error", "Please enter a valid email address");
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+    const err = validate();
+    if (err) {
+      Alert.alert("Error", err);
       return;
     }
 
     setLoading(true);
 
     try {
-      // Prepare registration data
-      const userData = {
+      const userData: RegisterRequest = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        password: password,
-        role: role,
-        department: department.trim(),
+        password,
+        role,
+        departmentId, // code (e.g. CS) - backend resolves it
         ...(role === "student"
-          ? { 
+          ? {
+              programId, // code (e.g. BSCS) - backend resolves it
               rollNumber: rollNumber.trim(),
-              semester: semester ? parseInt(semester) : undefined,
-              course: course.trim() || undefined,
+              studentId: rollNumber.trim(),
+              semester,
+              section, // A/B/C
+              shift, // MORNING/EVENING
             }
-          : { 
+          : {
               employeeId: employeeId.trim(),
             }),
       };
 
-      // Call register API
       const response = await authApi.register(userData);
 
-      console.log("Registration successful:", response.user.name);
+      console.log("Registration successful:", response.user?.name);
 
       Alert.alert(
         "Success",
@@ -99,21 +202,90 @@ export default function SignupScreen() {
         [
           {
             text: "Continue",
-            onPress: () => {
-              // Clear any existing onboarding status
-              AsyncStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+            onPress: async () => {
+              await AsyncStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
               router.replace("/permissions/location");
             },
           },
-        ]
+        ],
       );
     } catch (error: any) {
       console.error("Registration error:", error);
-      Alert.alert("Registration Failed", error.message || "Unable to create account");
+      Alert.alert(
+        "Registration Failed",
+        error.message || "Unable to create account",
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredPrograms =
+    departmentId && programs.length
+      ? programs.filter((p) => String(p.departmentId) === String(departmentId))
+      : programs;
+
+  const departmentPickerItems = loadingMeta
+    ? [
+        <Picker.Item
+          key="loading-departments"
+          label="Loading departments..."
+          value=""
+        />,
+      ]
+    : departments.length === 0
+      ? [
+          <Picker.Item
+            key="no-departments"
+            label="No departments found"
+            value=""
+          />,
+        ]
+      : [
+          <Picker.Item
+            key="select-department"
+            label="Select Department"
+            value=""
+          />,
+          ...departments.map((d) => (
+            <Picker.Item
+              key={d.code}
+              label={`${d.name} (${d.code})`}
+              value={d.code}
+            />
+          )),
+        ];
+
+  const programPickerItems = loadingMeta
+    ? [
+        <Picker.Item
+          key="loading-programs"
+          label="Loading programs..."
+          value=""
+        />,
+      ]
+    : filteredPrograms.length === 0
+      ? [
+          <Picker.Item
+            key="no-programs"
+            label={
+              departmentId
+                ? "No programs for selected department"
+                : "Select Department first"
+            }
+            value=""
+          />,
+        ]
+      : [
+          <Picker.Item key="select-program" label="Select Program" value="" />,
+          ...filteredPrograms.map((p) => (
+            <Picker.Item
+              key={p.code}
+              label={`${p.name} (${p.code})`}
+              value={p.code}
+            />
+          )),
+        ];
 
   return (
     <SafeAreaView style={styles.outerContainer} edges={["top"]}>
@@ -123,7 +295,6 @@ export default function SignupScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
-            {/* Logo */}
             <View style={styles.logoContainer}>
               <MaterialIcons
                 name="location-on"
@@ -131,10 +302,10 @@ export default function SignupScreen() {
                 color={Colors.primary}
               />
             </View>
+
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join Atendify today</Text>
 
-            {/* Signup Form */}
             <View style={styles.form}>
               {/* Role Selection */}
               <View>
@@ -222,7 +393,7 @@ export default function SignupScreen() {
                 />
               </View>
 
-              {/* Roll Number or Employee ID */}
+              {/* Roll Number / Employee ID */}
               <View style={styles.inputContainer}>
                 <MaterialIcons
                   name="badge"
@@ -243,7 +414,7 @@ export default function SignupScreen() {
                 />
               </View>
 
-              {/* Department */}
+              {/* Department dropdown (sends department code) */}
               <View style={styles.inputContainer}>
                 <MaterialIcons
                   name="business"
@@ -251,16 +422,20 @@ export default function SignupScreen() {
                   color={Colors.icon}
                   style={styles.inputIcon}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Department"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={department}
-                  onChangeText={setDepartment}
-                />
+                <View style={styles.pickerWrapper}>
+                  <Picker
+                    selectedValue={departmentId}
+                    onValueChange={(value: string) => setDepartmentId(value)}
+                    style={styles.pickerInput}
+                    mode="dropdown"
+                    dropdownIconColor={Colors.icon}
+                  >
+                    {departmentPickerItems}
+                  </Picker>
+                </View>
               </View>
 
-              {/* Course & Semester (Student only) */}
+              {/* Program / Semester / Section / Shift (Student only) */}
               {role === "student" && (
                 <>
                   <View style={styles.inputContainer}>
@@ -270,13 +445,17 @@ export default function SignupScreen() {
                       color={Colors.icon}
                       style={styles.inputIcon}
                     />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Course"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={course}
-                      onChangeText={setCourse}
-                    />
+                    <View style={styles.pickerWrapper}>
+                      <Picker
+                        selectedValue={programId}
+                        onValueChange={(value: string) => setProgramId(value)}
+                        style={styles.pickerInput}
+                        mode="dropdown"
+                        dropdownIconColor={Colors.icon}
+                      >
+                        {programPickerItems}
+                      </Picker>
+                    </View>
                   </View>
 
                   <View style={styles.inputContainer}>
@@ -286,14 +465,75 @@ export default function SignupScreen() {
                       color={Colors.icon}
                       style={styles.inputIcon}
                     />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="Semester"
-                      placeholderTextColor={Colors.textSecondary}
-                      value={semester}
-                      onChangeText={setSemester}
-                      keyboardType="number-pad"
-                    />
+                    <View style={styles.pickerWrapper}>
+                      <Picker
+                        selectedValue={semester}
+                        onValueChange={(value: number) =>
+                          setSemester(Number(value))
+                        }
+                        style={styles.pickerInput}
+                      >
+                        {SEMESTER_OPTIONS.map((sem) => (
+                          <Picker.Item
+                            key={sem}
+                            label={`Semester ${sem}`}
+                            value={sem}
+                          />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
+
+                  <View style={styles.row}>
+                    <View style={[styles.chipSelect, { flex: 1 }]}>
+                      <Text style={styles.labelInline}>Section</Text>
+                      <View style={styles.chipRow}>
+                        {SECTION_OPTIONS.map((s) => (
+                          <TouchableOpacity
+                            key={s}
+                            style={[
+                              styles.chip,
+                              section === s && styles.chipActive,
+                            ]}
+                            onPress={() => setSection(s)}
+                          >
+                            <Text
+                              style={[
+                                styles.chipText,
+                                section === s && styles.chipTextActive,
+                              ]}
+                            >
+                              {s}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={[styles.chipSelect, { flex: 1 }]}>
+                      <Text style={styles.labelInline}>Shift</Text>
+                      <View style={styles.chipRow}>
+                        {SHIFT_OPTIONS.map((sh) => (
+                          <TouchableOpacity
+                            key={sh}
+                            style={[
+                              styles.chip,
+                              shift === sh && styles.chipActive,
+                            ]}
+                            onPress={() => setShift(sh)}
+                          >
+                            <Text
+                              style={[
+                                styles.chipText,
+                                shift === sh && styles.chipTextActive,
+                              ]}
+                            >
+                              {sh}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
                   </View>
                 </>
               )}
@@ -344,7 +584,10 @@ export default function SignupScreen() {
               </View>
 
               <TouchableOpacity
-                style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+                style={[
+                  styles.signupButton,
+                  loading && styles.signupButtonDisabled,
+                ]}
                 onPress={handleSignup}
                 disabled={loading}
               >
@@ -361,6 +604,13 @@ export default function SignupScreen() {
                   <Text style={styles.loginLink}>Login</Text>
                 </TouchableOpacity>
               </View>
+
+              {departments.length === 0 && (
+                <Text style={styles.metaHint}>
+                  Note: Department/Program dropdowns are not loaded yet.
+                  Temporarily enter IDs until API endpoints exist.
+                </Text>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -370,22 +620,11 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  content: {
-    flex: 1,
-    padding: Spacing.lg,
-    justifyContent: "center",
-  },
+  outerContainer: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollContent: { flexGrow: 1 },
+  content: { flex: 1, padding: Spacing.lg, justifyContent: "center" },
+
   logoContainer: {
     width: 80,
     height: 80,
@@ -396,14 +635,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: Spacing.md,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.08,
     shadowRadius: 25,
     elevation: 5,
   },
+
   title: {
     ...Typography.h1,
     color: Colors.textPrimary,
@@ -416,19 +653,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: Spacing.xl,
   },
-  form: {
-    gap: Spacing.md,
-  },
+
+  form: { gap: Spacing.md },
+
   label: {
     ...Typography.body,
     fontWeight: "600",
     color: Colors.textPrimary,
     marginBottom: Spacing.sm,
   },
-  roleContainer: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
+
+  roleContainer: { flexDirection: "row", gap: Spacing.md },
   roleButton: {
     flex: 1,
     flexDirection: "row",
@@ -451,9 +686,8 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: "500",
   },
-  roleTextActive: {
-    color: Colors.surface,
-  },
+  roleTextActive: { color: Colors.surface },
+
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -464,14 +698,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  inputIcon: {
-    marginRight: Spacing.sm,
-  },
-  input: {
-    flex: 1,
-    ...Typography.body,
-    color: Colors.textPrimary,
-  },
+  inputIcon: { marginRight: Spacing.sm },
+  input: { flex: 1, ...Typography.body, color: Colors.textPrimary },
+
   signupButton: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.button,
@@ -480,26 +709,56 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: Spacing.md,
   },
-  signupButtonDisabled: {
-    opacity: 0.6,
-  },
+  signupButtonDisabled: { opacity: 0.6 },
   signupButtonText: {
     ...Typography.body,
     fontWeight: "500",
     color: Colors.surface,
   },
+
   loginContainer: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: Spacing.md,
   },
-  loginText: {
-    ...Typography.body,
-    color: Colors.textSecondary,
+  loginText: { ...Typography.body, color: Colors.textSecondary },
+  loginLink: { ...Typography.body, color: Colors.primary, fontWeight: "500" },
+
+  row: { flexDirection: "row", gap: Spacing.md },
+
+  chipSelect: { gap: Spacing.xs },
+  labelInline: { ...Typography.small, color: Colors.textSecondary },
+  chipRow: { flexDirection: "row", gap: Spacing.xs, flexWrap: "wrap" },
+  chip: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
   },
-  loginLink: {
-    ...Typography.body,
-    color: Colors.primary,
-    fontWeight: "500",
+  chipActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + "10",
+  },
+  chipText: { ...Typography.small, color: Colors.textPrimary },
+  chipTextActive: { color: Colors.primary, fontWeight: "600" },
+
+  metaHint: {
+    ...Typography.small,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
+    textAlign: "center",
+  },
+
+  pickerWrapper: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  pickerInput: {
+    width: "100%",
+    height: 50,
+    color: Colors.textPrimary,
+    marginLeft: 0,
   },
 });

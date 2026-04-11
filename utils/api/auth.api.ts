@@ -1,13 +1,26 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import apiClient, { handleApiError } from './client';
-import { STORAGE_KEYS } from './config';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import apiClient, { handleApiError } from "./client";
+import { STORAGE_KEYS } from "./config";
 import {
-  ApiResponse,
-  AuthResponse,
-  LoginRequest,
-  RegisterRequest,
-  User,
-} from './types';
+    ApiResponse,
+    AuthResponse,
+    LoginRequest,
+    RegisterRequest,
+    User,
+} from "./types";
+
+export interface DepartmentOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface ProgramOption {
+  id: string;
+  name: string;
+  code: string;
+  departmentId: string;
+}
 
 export const authApi = {
   /**
@@ -16,29 +29,29 @@ export const authApi = {
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
       const response = await apiClient.post<ApiResponse<AuthResponse>>(
-        '/auth/login',
-        credentials
+        "/auth/login",
+        credentials,
       );
-      
+
       if (response.data.success && response.data.data) {
         // Store token and user data
         await AsyncStorage.setItem(
           STORAGE_KEYS.TOKEN,
-          response.data.data.token
+          response.data.data.token,
         );
         await AsyncStorage.setItem(
           STORAGE_KEYS.USER,
-          JSON.stringify(response.data.data.user)
+          JSON.stringify(response.data.data.user),
         );
         await AsyncStorage.setItem(
           STORAGE_KEYS.USER_ROLE,
-          response.data.data.user.role
+          response.data.data.user.role,
         );
-        
+
         return response.data.data;
       }
-      
-      throw new Error('Invalid response from server');
+
+      throw new Error("Invalid response from server");
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -50,29 +63,69 @@ export const authApi = {
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
     try {
       const response = await apiClient.post<ApiResponse<AuthResponse>>(
-        '/auth/register',
-        userData
+        "/auth/register",
+        userData,
       );
-      
+
       if (response.data.success && response.data.data) {
         // Store token and user data
         await AsyncStorage.setItem(
           STORAGE_KEYS.TOKEN,
-          response.data.data.token
+          response.data.data.token,
         );
         await AsyncStorage.setItem(
           STORAGE_KEYS.USER,
-          JSON.stringify(response.data.data.user)
+          JSON.stringify(response.data.data.user),
         );
         await AsyncStorage.setItem(
           STORAGE_KEYS.USER_ROLE,
-          response.data.data.user.role
+          response.data.data.user.role,
         );
-        
+
         return response.data.data;
       }
-      
-      throw new Error('Invalid response from server');
+
+      throw new Error("Invalid response from server");
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  /**
+   * Get departments list for signup dropdown
+   */
+  getDepartments: async (): Promise<DepartmentOption[]> => {
+    try {
+      const response =
+        await apiClient.get<ApiResponse<{ departments: DepartmentOption[] }>>(
+          "/departments",
+        );
+
+      if (response.data.success && response.data.data) {
+        return response.data.data.departments || [];
+      }
+
+      return [];
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  /**
+   * Get programs list for signup dropdown
+   */
+  getPrograms: async (): Promise<ProgramOption[]> => {
+    try {
+      const response =
+        await apiClient.get<ApiResponse<{ programs: ProgramOption[] }>>(
+          "/programs",
+        );
+
+      if (response.data.success && response.data.data) {
+        return response.data.data.programs || [];
+      }
+
+      return [];
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -83,21 +136,20 @@ export const authApi = {
    */
   getMe: async (): Promise<User> => {
     try {
-      const response = await apiClient.get<ApiResponse<{ user: User }>>(
-        '/auth/me'
-      );
-      
+      const response =
+        await apiClient.get<ApiResponse<{ user: User }>>("/auth/me");
+
       if (response.data.success && response.data.data) {
         // Update stored user data
         await AsyncStorage.setItem(
           STORAGE_KEYS.USER,
-          JSON.stringify(response.data.data.user)
+          JSON.stringify(response.data.data.user),
         );
-        
+
         return response.data.data.user;
       }
-      
-      throw new Error('Invalid response from server');
+
+      throw new Error("Invalid response from server");
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -110,7 +162,7 @@ export const authApi = {
     try {
       // Call logout endpoint if you have one
       // await apiClient.post('/auth/logout');
-      
+
       // Clear all stored data
       await AsyncStorage.multiRemove([
         STORAGE_KEYS.TOKEN,

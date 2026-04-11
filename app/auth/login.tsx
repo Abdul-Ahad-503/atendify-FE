@@ -5,15 +5,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -29,7 +29,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     // Validation
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       Alert.alert("Error", "Please enter email and password");
       return;
     }
@@ -45,7 +45,7 @@ export default function LoginScreen() {
       // Call login API
       const response = await authApi.login({
         email: email.trim().toLowerCase(),
-        password: password,
+        password,
       });
 
       console.log("Login successful:", response.user.name);
@@ -54,15 +54,14 @@ export default function LoginScreen() {
       if (response.user.role !== role) {
         Alert.alert(
           "Wrong Role",
-          `This account is registered as ${response.user.role}. Please select the correct role.`
+          `This account is registered as ${response.user.role}. Please select the correct role.`,
         );
-        setLoading(false);
         return;
       }
 
       // Check if user has completed onboarding
       const onboardingCompleted = await AsyncStorage.getItem(
-        STORAGE_KEYS.ONBOARDING_COMPLETED
+        STORAGE_KEYS.ONBOARDING_COMPLETED,
       );
 
       if (onboardingCompleted === "true") {
@@ -95,6 +94,7 @@ export default function LoginScreen() {
               color={Colors.primary}
             />
           </View>
+
           <Text style={styles.appName}>Atendify</Text>
           <Text style={styles.tagline}>Location-Based Attendance</Text>
 
@@ -183,7 +183,7 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
                 <MaterialIcons
                   name={showPassword ? "visibility" : "visibility-off"}
                   size={20}
@@ -192,12 +192,22 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity>
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert(
+                  "Not implemented",
+                  "Forgot password flow is not added yet.",
+                )
+              }
+            >
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                loading && styles.loginButtonDisabled,
+              ]}
               onPress={handleLogin}
               disabled={loading}
             >

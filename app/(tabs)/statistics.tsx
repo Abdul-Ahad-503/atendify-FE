@@ -74,7 +74,7 @@ const TEACHER_STATS = {
       subject: "Web Technologies",
     },
     {
-      name: "Fatima Ahmed",
+      name: "Fatima Rana",
       id: "CS-2020-042",
       attendance: 68,
       subject: "Mobile App Development",

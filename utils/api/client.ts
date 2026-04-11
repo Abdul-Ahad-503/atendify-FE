@@ -1,18 +1,18 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
-import { router } from 'expo-router';
-import { API_CONFIG, STORAGE_KEYS } from './config';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios, { AxiosError, AxiosInstance } from "axios";
+import { router } from "expo-router";
+import { API_CONFIG, STORAGE_KEYS } from "./config";
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_CONFIG.BASE_URL,
   timeout: API_CONFIG.TIMEOUT,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// Request interceptor - add auth token to requests
+// Request interceptor - add auth token and disable HTTP caching
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -21,13 +21,20 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Error getting token from storage:', error);
+      console.error("Error getting token from storage:", error);
     }
+
+    // Prevent 304 Not Modified — always fetch fresh data
+    if (config.method === "get" || config.method === undefined) {
+      config.headers["Cache-Control"] = "no-cache";
+      config.headers["Pragma"] = "no-cache";
+    }
+
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor - handle errors globally
@@ -43,10 +50,10 @@ apiClient.interceptors.response.use(
         STORAGE_KEYS.USER,
         STORAGE_KEYS.USER_ROLE,
       ]);
-      router.replace('/auth/login');
+      router.replace("/auth/login");
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Helper function to handle API errors
@@ -56,15 +63,15 @@ export const handleApiError = (error: any): string => {
     if (axiosError.response?.data?.message) {
       return axiosError.response.data.message;
     }
-    if (axiosError.message === 'Network Error') {
-      return 'Unable to connect to server. Please check your internet connection.';
+    if (axiosError.message === "Network Error") {
+      return "Unable to connect to server. Please check your internet connection.";
     }
-    if (axiosError.code === 'ECONNABORTED') {
-      return 'Request timeout. Please try again.';
+    if (axiosError.code === "ECONNABORTED") {
+      return "Request timeout. Please try again.";
     }
-    return axiosError.message || 'An error occurred';
+    return axiosError.message || "An error occurred";
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 export default apiClient;

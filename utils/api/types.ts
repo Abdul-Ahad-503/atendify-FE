@@ -18,7 +18,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: "student" | "teacher" | "admin";
   rollNumber?: string;
   employeeId?: string;
   department?: string;
@@ -58,7 +58,7 @@ export interface Room {
   floor: number;
   capacity: number;
   location: {
-    type: 'Point';
+    type: "Point";
     coordinates: [number, number]; // [longitude, latitude]
   };
   geofenceRadius: number;
@@ -92,10 +92,10 @@ export interface AttendanceRecord {
   student: User | string;
   course: Course | string;
   session: TeacherSession | string;
-  status: 'present' | 'absent' | 'late' | 'excused';
+  status: "present" | "absent" | "late" | "excused";
   markedAt: string;
   location?: {
-    type: 'Point';
+    type: "Point";
     coordinates: [number, number];
   };
   distance?: number;
@@ -129,7 +129,7 @@ export interface AttendancePercentage {
   totalClasses: number;
   classesAttended: number;
   percentage: number;
-  status: 'good' | 'warning' | 'critical';
+  status: "good" | "warning" | "critical";
   lastUpdated: string;
 }
 
@@ -197,8 +197,8 @@ export interface Notification {
   user: User | string;
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
-  priority: 'low' | 'medium' | 'high';
+  type: "info" | "warning" | "success" | "error";
+  priority: "low" | "medium" | "high";
   isRead: boolean;
   actionUrl?: string;
   metadata?: any;
@@ -215,12 +215,17 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
-  role: 'student' | 'teacher';
+  role: "student" | "teacher";
+  departmentId: string;
+  // Student fields
+  programId?: string;
   rollNumber?: string;
-  employeeId?: string;
-  department: string;
+  studentId?: string;
   semester?: number;
-  course?: string;
+  section?: string;
+  shift?: "MORNING" | "EVENING";
+  // Teacher fields
+  employeeId?: string;
 }
 
 export interface MarkAttendanceRequest {

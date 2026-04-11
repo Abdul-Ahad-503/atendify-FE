@@ -1,236 +1,86 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
+import { timetableApi, TimetableEntry, WeeklyTimetable } from "@/utils/api";
+import { STORAGE_KEYS } from "@/utils/api/config";
 import { getUserRole, UserRole } from "@/utils/userRole";
 import { MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Dummy timetable data
-const STUDENT_TIMETABLE = {
-  Monday: [
-    {
-      subject: "Mobile App Development",
-      teacher: "Dr. Sarah Khan",
-      time: "10:00 AM - 11:30 AM",
-      room: "Room 301",
-      status: "upcoming",
-    },
-    {
-      subject: "Database Systems",
-      teacher: "Prof. Ali Ahmed",
-      time: "1:00 PM - 2:30 PM",
-      room: "Lab 205",
-      status: "upcoming",
-    },
-    {
-      subject: "Software Engineering",
-      teacher: "Dr. Fatima Ali",
-      time: "3:00 PM - 4:30 PM",
-      room: "Room 105",
-      status: "upcoming",
-    },
-  ],
-  Tuesday: [
-    {
-      subject: "Web Technologies",
-      teacher: "Mr. Hassan Raza",
-      time: "9:00 AM - 10:30 AM",
-      room: "Lab 202",
-      status: "upcoming",
-    },
-    {
-      subject: "Data Structures",
-      teacher: "Dr. Ahmed Khan",
-      time: "11:00 AM - 12:30 PM",
-      room: "Room 204",
-      status: "upcoming",
-    },
-    {
-      subject: "Computer Networks",
-      teacher: "Prof. Maria Siddique",
-      time: "2:00 PM - 3:30 PM",
-      room: "Lab 301",
-      status: "upcoming",
-    },
-  ],
-  Wednesday: [
-    {
-      subject: "Mobile App Development",
-      teacher: "Dr. Sarah Khan",
-      time: "10:00 AM - 11:30 AM",
-      room: "Room 301",
-      status: "upcoming",
-    },
-    {
-      subject: "Artificial Intelligence",
-      teacher: "Dr. Usman Ali",
-      time: "1:00 PM - 2:30 PM",
-      room: "Room 402",
-      status: "upcoming",
-    },
-  ],
-  Thursday: [
-    {
-      subject: "Web Technologies",
-      teacher: "Mr. Hassan Raza",
-      time: "9:00 AM - 10:30 AM",
-      room: "Lab 202",
-      status: "upcoming",
-    },
-    {
-      subject: "Database Systems",
-      teacher: "Prof. Ali Ahmed",
-      time: "1:00 PM - 2:30 PM",
-      room: "Lab 205",
-      status: "upcoming",
-    },
-    {
-      subject: "Software Engineering",
-      teacher: "Dr. Fatima Ali",
-      time: "3:00 PM - 4:30 PM",
-      room: "Room 105",
-      status: "upcoming",
-    },
-  ],
-  Friday: [
-    {
-      subject: "Computer Networks",
-      teacher: "Prof. Maria Siddique",
-      time: "10:00 AM - 11:30 AM",
-      room: "Lab 301",
-      status: "upcoming",
-    },
-    {
-      subject: "Artificial Intelligence",
-      teacher: "Dr. Usman Ali",
-      time: "1:00 PM - 2:30 PM",
-      room: "Room 402",
-      status: "upcoming",
-    },
-  ],
-};
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
 
-const TEACHER_TIMETABLE = {
-  Monday: [
-    {
-      subject: "Mobile App Development",
-      course: "BS-CS 6A",
-      time: "10:00 AM - 11:30 AM",
-      room: "Room 301",
-      students: 50,
-    },
-    {
-      subject: "Web Technologies",
-      course: "BS-CS 5B",
-      time: "1:00 PM - 2:30 PM",
-      room: "Lab 202",
-      students: 45,
-    },
-    {
-      subject: "Software Engineering",
-      course: "BS-SE 4A",
-      time: "3:00 PM - 4:30 PM",
-      room: "Room 105",
-      students: 40,
-    },
-  ],
-  Tuesday: [
-    {
-      subject: "Mobile App Development",
-      course: "BS-CS 6B",
-      time: "9:00 AM - 10:30 AM",
-      room: "Room 301",
-      students: 48,
-    },
-    {
-      subject: "Web Technologies",
-      course: "BS-CS 5A",
-      time: "2:00 PM - 3:30 PM",
-      room: "Lab 202",
-      students: 42,
-    },
-  ],
-  Wednesday: [
-    {
-      subject: "Mobile App Development",
-      course: "BS-CS 6A",
-      time: "10:00 AM - 11:30 AM",
-      room: "Room 301",
-      students: 50,
-    },
-    {
-      subject: "Software Engineering",
-      course: "BS-SE 4B",
-      time: "1:00 PM - 2:30 PM",
-      room: "Room 105",
-      students: 38,
-    },
-  ],
-  Thursday: [
-    {
-      subject: "Web Technologies",
-      course: "BS-CS 5B",
-      time: "9:00 AM - 10:30 AM",
-      room: "Lab 202",
-      students: 45,
-    },
-    {
-      subject: "Mobile App Development",
-      course: "BS-CS 6B",
-      time: "1:00 PM - 2:30 PM",
-      room: "Room 301",
-      students: 48,
-    },
-    {
-      subject: "Software Engineering",
-      course: "BS-SE 4A",
-      time: "3:00 PM - 4:30 PM",
-      room: "Room 105",
-      students: 40,
-    },
-  ],
-  Friday: [
-    {
-      subject: "Web Technologies",
-      course: "BS-CS 5A",
-      time: "10:00 AM - 11:30 AM",
-      room: "Lab 202",
-      students: 42,
-    },
-    {
-      subject: "Software Engineering",
-      course: "BS-SE 4B",
-      time: "1:00 PM - 2:30 PM",
-      room: "Room 105",
-      students: 38,
-    },
-  ],
+// Helper function to format time from HH:MM to HH:MM AM/PM
+const formatTime = (time: string): string => {
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 };
-
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export default function TimetableScreen() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [selectedDay, setSelectedDay] = useState("Monday");
+  const [selectedDay, setSelectedDay] =
+    useState<(typeof DAYS)[number]>("Monday");
+  const [timetable, setTimetable] = useState<WeeklyTimetable | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUserRole();
+    loadData();
   }, []);
 
-  const loadUserRole = async () => {
-    const role = await getUserRole();
-    setUserRole(role);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const role = await getUserRole();
+      setUserRole(role);
+
+      // Fetch timetable based on role
+      const timetableData =
+        role === "teacher"
+          ? await timetableApi.getTeacherTimetable()
+          : await (async () => {
+              const userRaw = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+              const user = userRaw ? JSON.parse(userRaw) : null;
+
+              const payload = {
+                program:
+                  user?.programId || user?.program || user?.programCode || "",
+                semester: Number(user?.semester || 0),
+                section: String(user?.section || "").toUpperCase(),
+                termId: user?.termId || user?.term,
+              };
+
+              if (!payload.program || !payload.semester || !payload.section) {
+                throw new Error(
+                  "Student profile is incomplete. Program, semester, and section are required.",
+                );
+              }
+
+              // Previous endpoint (kept commented for reference):
+              // return timetableApi.getStudentTimetable(payload.termId);
+
+              return timetableApi.getStudentTimetableByCohort(payload);
+            })();
+
+      setTimetable(timetableData);
+    } catch (error: any) {
+      console.error("Failed to load timetable:", error);
+      Alert.alert("Error", error.message || "Failed to load timetable");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const timetable =
-    userRole === "teacher" ? TEACHER_TIMETABLE : STUDENT_TIMETABLE;
-  const classes = timetable[selectedDay as keyof typeof timetable] || [];
+  const classes = timetable?.[selectedDay] || [];
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -271,98 +121,112 @@ export default function TimetableScreen() {
       <ScrollView style={styles.content}>
         <Text style={styles.dayTitle}>{selectedDay}</Text>
 
-        {classes.length > 0 ? (
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Loading timetable...</Text>
+          </View>
+        ) : classes.length > 0 ? (
           <View style={styles.classList}>
-            {classes.map((classItem, index) => (
-              <View key={index} style={styles.classCard}>
-                <View style={styles.classHeader}>
-                  <View style={styles.classStatus}>
-                    {getStatusIcon(classItem, index)}
-                  </View>
-                  <View style={styles.classInfo}>
-                    <Text style={styles.className}>{classItem.subject}</Text>
-                    {userRole === "student" ? (
-                      <>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="person"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {"teacher" in classItem ? classItem.teacher : ""}
-                          </Text>
-                        </View>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="access-time"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {classItem.time}
-                          </Text>
-                        </View>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="room"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {classItem.room}
-                          </Text>
-                        </View>
-                      </>
-                    ) : (
-                      <>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="people"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {"course" in classItem ? classItem.course : ""}
-                          </Text>
-                        </View>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="access-time"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {classItem.time}
-                          </Text>
-                        </View>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="room"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {classItem.room}
-                          </Text>
-                        </View>
-                        <View style={styles.classDetail}>
-                          <MaterialIcons
-                            name="group"
-                            size={16}
-                            color={Colors.textSecondary}
-                          />
-                          <Text style={styles.classDetailText}>
-                            {"students" in classItem ? classItem.students : 0}{" "}
-                            Students
-                          </Text>
-                        </View>
-                      </>
-                    )}
+            {classes.map((classItem: TimetableEntry, index: number) => {
+              const timeDisplay = `${formatTime(classItem.timeStart)} - ${formatTime(classItem.timeEnd)}`;
+
+              return (
+                <View key={classItem.id} style={styles.classCard}>
+                  <View style={styles.classHeader}>
+                    <View style={styles.classStatus}>
+                      {getStatusIcon(classItem, index)}
+                    </View>
+                    <View style={styles.classInfo}>
+                      <Text style={styles.className}>
+                        {classItem.courseName}
+                      </Text>
+                      <Text style={styles.courseCode}>
+                        {classItem.courseCode}
+                      </Text>
+                      {userRole === "student" ? (
+                        <>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="person"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {classItem.teacherName || "N/A"}
+                            </Text>
+                          </View>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="access-time"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {timeDisplay}
+                            </Text>
+                          </View>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="room"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {classItem.roomNo}
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="people"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {classItem.programCode} {classItem.semester}
+                              {classItem.section}
+                            </Text>
+                          </View>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="access-time"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {timeDisplay}
+                            </Text>
+                          </View>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="room"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {classItem.roomNo}
+                            </Text>
+                          </View>
+                          <View style={styles.classDetail}>
+                            <MaterialIcons
+                              name="group"
+                              size={16}
+                              color={Colors.textSecondary}
+                            />
+                            <Text style={styles.classDetailText}>
+                              {classItem.enrolledStudents || 0} Students
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -421,6 +285,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   daySelector: {
+    flexGrow: 0,
     backgroundColor: Colors.surface,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
@@ -428,8 +293,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   dayButton: {
+    alignSelf: "flex-start",
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs,
     marginHorizontal: Spacing.xs,
     borderRadius: 20,
     backgroundColor: Colors.background,
@@ -497,6 +363,11 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: "600",
   },
+  courseCode: {
+    ...Typography.small,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+  },
   classDetail: {
     flexDirection: "row",
     alignItems: "center",
@@ -505,6 +376,18 @@ const styles = StyleSheet.create({
   classDetailText: {
     ...Typography.body,
     color: Colors.textSecondary,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.xl,
+    marginTop: Spacing.xl * 2,
+  },
+  loadingText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    marginTop: Spacing.md,
   },
   emptyState: {
     flex: 1,

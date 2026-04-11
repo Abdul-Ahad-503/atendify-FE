@@ -548,6 +548,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   filterContainer: {
+    flexGrow: 0,
     backgroundColor: Colors.surface,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.sm,
@@ -557,12 +558,13 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.xs,
     marginHorizontal: Spacing.xs,
     borderRadius: 20,
     backgroundColor: Colors.background,
-    gap: Spacing.xs,
+    gap: Spacing.sm,
   },
   filterButtonActive: {
     backgroundColor: Colors.primary,
