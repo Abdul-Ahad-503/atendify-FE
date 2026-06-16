@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1060812231910",
+    "project_id": "atendify-f5c37",
+    "storage_bucket": "atendify-f5c37.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060812231910:android:be580c9b0129837f019727",
+        "android_client_info": {
+          "package_name": "com.anonymous.myApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5EHLWcYRSIvWWkUb5j-p2ixipJytezxQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
