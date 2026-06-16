@@ -16,7 +16,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+const DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
 
 // Helper function to format time from HH:MM to HH:MM AM/PM
 const formatTime = (time: string): string => {
@@ -83,7 +91,7 @@ export default function TimetableScreen() {
   const classes = timetable?.[selectedDay] || [];
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <MaterialIcons name="schedule" size={32} color={Colors.primary} />

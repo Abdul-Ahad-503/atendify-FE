@@ -68,6 +68,53 @@ export const checkLocationPermission = async (): Promise<
 /**
  * Request foreground location permission
  */
+export const getAccurateLocation =
+  async (): Promise<Location.LocationObject> => {
+    let bestLocation: Location.LocationObject | null = null;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < 5000) {
+      try {
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.BestForNavigation,
+          // maximumAge: 0,
+        });
+
+        const accuracy = location.coords.accuracy ?? 999;
+
+        console.log("Location:", {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+          accuracy,
+        });
+
+        if (!bestLocation || accuracy < (bestLocation.coords.accuracy ?? 999)) {
+          bestLocation = location;
+        }
+
+        // Excellent GPS fix
+        if (accuracy <= 5) {
+          break;
+        }
+      } catch (error) {
+        console.error("Location fetch failed:", error);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    if (!bestLocation) {
+      throw new Error("Unable to get location");
+    }
+
+    console.log(
+      "Best accuracy selected:",
+      bestLocation.coords.accuracy,
+      "meters",
+    );
+
+    return bestLocation;
+  };
 export const requestLocationPermission = async (): Promise<boolean> => {
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -129,15 +176,25 @@ export const checkAllPermissions = async () => {
  * Get current location
  */
 export const getCurrentLocation = async () => {
-  try {
+  let bestLocation: Location.LocationObject | null = null;
+
+  for (let i = 0; i < 12; i++) {
     const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High,
+      accuracy: Location.Accuracy.BestForNavigation,
     });
-    return location;
-  } catch (error) {
-    console.error("Error getting current location:", error);
-    throw error;
+
+    const acc = location.coords.accuracy ?? 999;
+
+    if (!bestLocation || acc < (bestLocation.coords.accuracy ?? 999)) {
+      bestLocation = location;
+    }
+
+    if (acc <= 10) break;
+
+    await new Promise((r) => setTimeout(r, 2000));
   }
+
+  return bestLocation!;
 };
 
 /**

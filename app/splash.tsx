@@ -19,7 +19,7 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
       {/* Logo Container */}

@@ -32,7 +32,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}  >
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to Atendify</Text>
         <Text style={styles.subtitle}>Location-Based Attendance System</Text>
@@ -51,7 +51,7 @@ function StudentDashboard() {
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}  >
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>
@@ -249,7 +249,7 @@ function TeacherDashboard() {
   });
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}  >
       <ScrollView>
         {/* Header */}
         <View style={styles.header}>

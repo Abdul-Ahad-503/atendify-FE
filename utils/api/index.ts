@@ -5,6 +5,14 @@ export { default as apiClient, handleApiError } from "./client";
 export * from "./config";
 export { courseApi } from "./course.api";
 export { dashboardApi } from "./dashboard.api";
+export {
+    AttendanceError,
+    getErrorMessage,
+    isGpsError,
+    isRetryableError,
+    parseAttendanceError,
+    requiresReAuth
+} from "./errors";
 export { notificationApi } from "./notification.api";
 export { offeringApi } from "./offering.api";
 export type {

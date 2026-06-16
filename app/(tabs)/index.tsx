@@ -1,16 +1,24 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
-import { authApi, dashboardApi, User, StudentDashboard as StudentDashboardType, TeacherDashboard as TeacherDashboardType } from "@/utils/api";
+import {
+  attendanceApi,
+  authApi,
+  dashboardApi,
+  StudentDashboard as StudentDashboardType,
+  TeacherDashboard as TeacherDashboardType,
+  User,
+} from "@/utils/api";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -36,7 +44,7 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={styles.loadingText}>Loading...</Text>
@@ -47,7 +55,7 @@ export default function HomeScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           <Text style={styles.title}>Welcome to Atendify</Text>
           <Text style={styles.subtitle}>Location-Based Attendance System</Text>
@@ -63,7 +71,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to Atendify</Text>
         <Text style={styles.subtitle}>Location-Based Attendance System</Text>
@@ -74,7 +82,8 @@ export default function HomeScreen() {
 
 // Student Dashboard Component
 function StudentDashboard({ user }: { user: User }) {
-  const [dashboardData, setDashboardData] = useState<StudentDashboardType | null>(null);
+  const [dashboardData, setDashboardData] =
+    useState<StudentDashboardType | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
@@ -109,12 +118,16 @@ function StudentDashboard({ user }: { user: User }) {
 
   const formatTime = (time: string) => {
     const date = new Date(`2000-01-01T${time}`);
-    return date.toLocaleTimeString("en-US", { hour: 'numeric', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -123,16 +136,22 @@ function StudentDashboard({ user }: { user: User }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+          />
         }
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Hello, {user.name.split(' ')[0]}!</Text>
+            <Text style={styles.greeting}>
+              Hello, {user.name.split(" ")[0]}!
+            </Text>
             <Text style={styles.date}>{currentDate}</Text>
           </View>
           <View style={styles.roleBadge}>
@@ -142,45 +161,106 @@ function StudentDashboard({ user }: { user: User }) {
         </View>
 
         {/* Today's Classes */}
-        {dashboardData?.todayClasses && dashboardData.todayClasses.length > 0 ? (
+        {dashboardData?.todayClasses &&
+        dashboardData.todayClasses.length > 0 ? (
           dashboardData.todayClasses.map((classItem, index) => (
             <View key={classItem.id} style={styles.card}>
               <View style={styles.cardHeader}>
-                <MaterialIcons name="schedule" size={24} color={Colors.primary} />
+                <MaterialIcons
+                  name="schedule"
+                  size={24}
+                  color={Colors.primary}
+                />
                 <Text style={styles.cardTitle}>
                   {index === 0 ? "Current/Next Class" : "Upcoming Class"}
                 </Text>
               </View>
               <View style={styles.classInfo}>
                 <Text style={styles.className}>
-                  {typeof classItem.course === 'object' ? classItem.course.courseName : 'Loading...'}
+                  {typeof classItem.course === "object"
+                    ? classItem.course.courseName
+                    : "Loading..."}
                 </Text>
                 <View style={styles.classDetails}>
                   <View style={styles.classDetailItem}>
-                    <MaterialIcons name="access-time" size={16} color={Colors.textSecondary} />
+                    <MaterialIcons
+                      name="access-time"
+                      size={16}
+                      color={Colors.textSecondary}
+                    />
                     <Text style={styles.classDetailText}>
-                      {formatTime(classItem.startTime)} - {formatTime(classItem.endTime)}
+                      {formatTime(classItem.startTime)} -{" "}
+                      {formatTime(classItem.endTime)}
                     </Text>
                   </View>
                   <View style={styles.classDetailItem}>
-                    <MaterialIcons name="person" size={16} color={Colors.textSecondary} />
+                    <MaterialIcons
+                      name="person"
+                      size={16}
+                      color={Colors.textSecondary}
+                    />
                     <Text style={styles.classDetailText}>
-                      {typeof classItem.teacher === 'object' ? classItem.teacher.name : 'Teacher'}
+                      {typeof classItem.teacher === "object"
+                        ? classItem.teacher.name
+                        : "Teacher"}
                     </Text>
                   </View>
                   <View style={styles.classDetailItem}>
-                    <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
+                    <MaterialIcons
+                      name="room"
+                      size={16}
+                      color={Colors.textSecondary}
+                    />
                     <Text style={styles.classDetailText}>
                       {classItem.room.roomNumber}
                     </Text>
                   </View>
                 </View>
               </View>
+              <TouchableOpacity
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  backgroundColor: Colors.primary,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  marginTop: 12,
+                }}
+                onPress={async () => {
+                  const meetingId = classItem.id;
+                  try {
+                    const result =
+                      await attendanceApi.checkActiveSession(meetingId);
+                    if (result.isActive) {
+                      router.push({
+                        pathname: "/student/mark-attendance",
+                        params: { meetingId },
+                      });
+                    } else {
+                      Alert.alert(
+                        "No Active Session",
+                        "Teacher has not started attendance yet.",
+                      );
+                    }
+                  } catch {
+                    Alert.alert("Error", "Could not check session status.");
+                  }
+                }}
+              >
+                <MaterialIcons name="check-circle" size={18} color="#fff" />
+                <Text style={{ color: "#fff", fontWeight: "600" }}>
+                  Check Attendance
+                </Text>
+              </TouchableOpacity>
             </View>
           ))
         ) : (
           <View style={styles.card}>
-            <Text style={styles.noDataText}>No classes scheduled for today</Text>
+            <Text style={styles.noDataText}>
+              No classes scheduled for today
+            </Text>
           </View>
         )}
 
@@ -188,31 +268,75 @@ function StudentDashboard({ user }: { user: User }) {
         {dashboardData?.stats && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="assignment" size={24} color={Colors.primary} />
+              <MaterialIcons
+                name="assignment"
+                size={24}
+                color={Colors.primary}
+              />
               <Text style={styles.cardTitle}>Today's Stats</Text>
             </View>
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
-                <View style={[styles.summaryIcon, { backgroundColor: Colors.success + "20" }]}>
-                  <MaterialIcons name="check" size={32} color={Colors.success} />
+                <View
+                  style={[
+                    styles.summaryIcon,
+                    { backgroundColor: Colors.success + "20" },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="check"
+                    size={32}
+                    color={Colors.success}
+                  />
                 </View>
-                <Text style={styles.summaryValue}>{dashboardData.stats.presentToday}</Text>
+                <Text style={styles.summaryValue}>
+                  {dashboardData.stats.presentToday}
+                </Text>
                 <Text style={styles.summaryLabel}>Present Today</Text>
               </View>
               <View style={styles.summaryItem}>
-                <View style={[styles.summaryIcon, { backgroundColor: Colors.primary + "20" }]}>
-                  <MaterialIcons name="school" size={32} color={Colors.primary} />
+                <View
+                  style={[
+                    styles.summaryIcon,
+                    { backgroundColor: Colors.primary + "20" },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="school"
+                    size={32}
+                    color={Colors.primary}
+                  />
                 </View>
-                <Text style={styles.summaryValue}>{dashboardData.stats.totalCourses}</Text>
+                <Text style={styles.summaryValue}>
+                  {dashboardData.stats.totalCourses}
+                </Text>
                 <Text style={styles.summaryLabel}>Total Courses</Text>
               </View>
               <View style={styles.summaryItem}>
-                <View style={[styles.summaryIcon, { backgroundColor: 
-                  dashboardData.stats.criticalCourses > 0 ? Colors.error + "20" : Colors.success + "20" }]}>
-                  <MaterialIcons name="warning" size={32} color={
-                    dashboardData.stats.criticalCourses > 0 ? Colors.error : Colors.success} />
+                <View
+                  style={[
+                    styles.summaryIcon,
+                    {
+                      backgroundColor:
+                        dashboardData.stats.criticalCourses > 0
+                          ? Colors.error + "20"
+                          : Colors.success + "20",
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="warning"
+                    size={32}
+                    color={
+                      dashboardData.stats.criticalCourses > 0
+                        ? Colors.error
+                        : Colors.success
+                    }
+                  />
                 </View>
-                <Text style={styles.summaryValue}>{dashboardData.stats.criticalCourses}</Text>
+                <Text style={styles.summaryValue}>
+                  {dashboardData.stats.criticalCourses}
+                </Text>
                 <Text style={styles.summaryLabel}>Critical</Text>
               </View>
             </View>
@@ -223,7 +347,11 @@ function StudentDashboard({ user }: { user: User }) {
         {dashboardData?.stats && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="pie-chart" size={24} color={Colors.primary} />
+              <MaterialIcons
+                name="pie-chart"
+                size={24}
+                color={Colors.primary}
+              />
               <Text style={styles.cardTitle}>Overall Attendance</Text>
             </View>
             <View style={styles.percentageContainer}>
@@ -233,47 +361,69 @@ function StudentDashboard({ user }: { user: User }) {
               <Text style={styles.percentageLabel}>Average Attendance</Text>
             </View>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${dashboardData.stats.averageAttendance}%` }]} />
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${dashboardData.stats.averageAttendance}%` },
+                ]}
+              />
             </View>
           </View>
         )}
 
         {/* Course-wise Attendance */}
-        {dashboardData?.attendanceOverview && dashboardData.attendanceOverview.length > 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <MaterialIcons name="list" size={24} color={Colors.primary} />
-              <Text style={styles.cardTitle}>Course Attendance</Text>
-            </View>
-            {dashboardData.attendanceOverview.slice(0, 3).map((item) => (
-              <View key={item.id} style={styles.courseItem}>
-                <View style={styles.courseInfo}>
-                  <Text style={styles.courseName}>
-                    {typeof item.course === 'object' ? item.course.courseCode : 'Course'}
-                  </Text>
-                  <Text style={styles.courseAttendance}>
-                    {item.classesAttended}/{item.totalClasses} classes
+        {dashboardData?.attendanceOverview &&
+          dashboardData.attendanceOverview.length > 0 && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <MaterialIcons name="list" size={24} color={Colors.primary} />
+                <Text style={styles.cardTitle}>Course Attendance</Text>
+              </View>
+              {dashboardData.attendanceOverview.slice(0, 3).map((item) => (
+                <View key={item.id} style={styles.courseItem}>
+                  <View style={styles.courseInfo}>
+                    <Text style={styles.courseName}>
+                      {typeof item.course === "object"
+                        ? item.course.courseCode
+                        : "Course"}
+                    </Text>
+                    <Text style={styles.courseAttendance}>
+                      {item.classesAttended}/{item.totalClasses} classes
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.coursePercentage,
+                      {
+                        color:
+                          item.status === "critical"
+                            ? Colors.error
+                            : item.status === "warning"
+                              ? Colors.warning
+                              : Colors.success,
+                      },
+                    ]}
+                  >
+                    {item.percentage.toFixed(0)}%
                   </Text>
                 </View>
-                <Text style={[
-                  styles.coursePercentage,
-                  { color: item.status === 'critical' ? Colors.error : 
-                           item.status === 'warning' ? Colors.warning : Colors.success }
-                ]}>
-                  {item.percentage.toFixed(0)}%
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+              ))}
+            </View>
+          )}
 
         {/* Quick Actions */}
         <View style={styles.actionsGrid}>
-          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/timetable')}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push("/(tabs)/timetable")}
+          >
             <MaterialIcons name="schedule" size={32} color={Colors.primary} />
             <Text style={styles.actionText}>Timetable</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/statistics')}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push("/(tabs)/statistics")}
+          >
             <MaterialIcons name="bar-chart" size={32} color={Colors.primary} />
             <Text style={styles.actionText}>Statistics</Text>
           </TouchableOpacity>
@@ -285,10 +435,58 @@ function StudentDashboard({ user }: { user: User }) {
 
 // Teacher Dashboard Component
 function TeacherDashboard({ user }: { user: User }) {
-  const [dashboardData, setDashboardData] = useState<TeacherDashboardType | null>(null);
+  const [dashboardData, setDashboardData] =
+    useState<TeacherDashboardType | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  const pollingRef = useRef<any>(null);
+  const notifiedSessions = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Start polling when dashboard loads
+    pollingRef.current = setInterval(async () => {
+      if (!dashboardData?.todayClasses) return;
+
+      for (const classItem of dashboardData.todayClasses) {
+        const meetingId = classItem.id;
+        if (!meetingId || notifiedSessions.current.has(meetingId)) continue;
+
+        try {
+          const result = await attendanceApi.checkActiveSession(meetingId);
+          if (result.isActive) {
+            notifiedSessions.current.add(meetingId); // don't alert twice
+            Alert.alert(
+              "📋 Attendance Started",
+              `Mark attendance for ${
+                typeof classItem.course === "object"
+                  ? classItem.course.courseName
+                  : "your class"
+              }`,
+              [
+                { text: "Later", style: "cancel" },
+                {
+                  text: "Mark Now",
+                  onPress: () =>
+                    router.push({
+                      pathname: "/student/mark-attendance",
+                      params: { meetingId },
+                    }),
+                },
+              ],
+            );
+          }
+        } catch (error) {
+          // silently ignore polling errors
+        }
+      }
+    }, 10000); // poll every 10 seconds
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [dashboardData]); // restart when dashboard data loads
 
   useEffect(() => {
     loadDashboard();
@@ -320,12 +518,62 @@ function TeacherDashboard({ user }: { user: User }) {
 
   const formatTime = (time: string) => {
     const date = new Date(`2000-01-01T${time}`);
-    return date.toLocaleTimeString("en-US", { hour: 'numeric', minute: '2-digit', hour12: true });
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+  const handleCheckAttendance = async (meetingId: string) => {
+    try {
+      const result = await attendanceApi.checkActiveSession(meetingId);
+
+      if (result.isActive) {
+        router.push({
+          pathname: "/student/mark-attendance",
+          params: { meetingId },
+        });
+      } else {
+        Alert.alert(
+          "No Active Session",
+          "Teacher has not started attendance yet.",
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not check session status.");
+    }
+  };
+  const handleOpenClassDetails = (
+    classItem: TeacherDashboardType["todayClasses"][number],
+  ) => {
+    const course =
+      typeof classItem.course === "object" ? classItem.course : null;
+    const subject =
+      typeof classItem.subject === "object" ? classItem.subject : null;
+
+    router.push({
+      pathname: "/teacher/class-detail",
+      params: {
+        classId: classItem.id,
+        courseId: course?.id ?? "",
+        courseName: course?.courseName ?? "Class",
+        courseCode: course?.courseCode ?? "",
+        startTime: classItem.startTime,
+        endTime: classItem.endTime,
+        roomNumber: classItem.room?.roomNumber ?? "",
+        semester: String(course?.semester ?? ""),
+        programCode: classItem.programCode ?? "",
+        section: classItem.section ?? "",
+        dayOfWeek: String(classItem.dayOfWeek ?? ""),
+        subjectName: subject?.subjectName ?? "",
+        subjectCode: subject?.subjectCode ?? "",
+      },
+    });
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.secondary} />
         </View>
@@ -334,111 +582,184 @@ function TeacherDashboard({ user }: { user: User }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.secondary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.secondary]}
+          />
         }
       >
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Hello, {user.name.split(' ')[0]}!</Text>
+            <Text style={styles.greeting}>
+              Hello, {user.name.split(" ")[0]}!
+            </Text>
             <Text style={styles.date}>{currentDate}</Text>
           </View>
-          <View style={[styles.roleBadge, { backgroundColor: Colors.secondary + "20" }]}>
+          <View
+            style={[
+              styles.roleBadge,
+              { backgroundColor: Colors.secondary + "20" },
+            ]}
+          >
             <MaterialIcons name="school" size={20} color={Colors.secondary} />
-            <Text style={[styles.roleBadgeText, { color: Colors.secondary }]}>Teacher</Text>
+            <Text style={[styles.roleBadgeText, { color: Colors.secondary }]}>
+              Teacher
+            </Text>
           </View>
         </View>
 
         {/* Active Sessions */}
-        {dashboardData?.activeSessions && dashboardData.activeSessions.length > 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <MaterialIcons name="class" size={24} color={Colors.secondary} />
-              <Text style={styles.cardTitle}>Active Session</Text>
-              <View style={styles.liveBadge}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
-              </View>
-            </View>
-            {dashboardData.activeSessions.map((session) => (
-              <View key={session.id} style={styles.classInfo}>
-                <Text style={styles.className}>
-                  {typeof session.course === 'object' ? session.course.courseName : 'Class'}
-                </Text>
-                <View style={styles.classDetails}>
-                  <View style={styles.classDetailItem}>
-                    <MaterialIcons name="access-time" size={16} color={Colors.textSecondary} />
-                    <Text style={styles.classDetailText}>
-                      Started at {new Date(session.startTime).toLocaleTimeString('en-US', { 
-                        hour: 'numeric', minute: '2-digit', hour12: true 
-                      })}
-                    </Text>
-                  </View>
-                  <View style={styles.classDetailItem}>
-                    <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
-                    <Text style={styles.classDetailText}>{session.room.roomNumber}</Text>
-                  </View>
-                  <View style={styles.classDetailItem}>
-                    <MaterialIcons name="people" size={16} color={Colors.textSecondary} />
-                    <Text style={styles.classDetailText}>
-                      {session.totalPresent || 0}/{session.totalStudentsEnrolled} Present
-                    </Text>
-                  </View>
+        {dashboardData?.activeSessions &&
+          dashboardData.activeSessions.length > 0 && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <MaterialIcons
+                  name="class"
+                  size={24}
+                  color={Colors.secondary}
+                />
+                <Text style={styles.cardTitle}>Active Session</Text>
+                <View style={styles.liveBadge}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
                 </View>
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* Today's Classes */}
-        {dashboardData?.todayClasses && dashboardData.todayClasses.length > 0 && (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <MaterialIcons name="today" size={24} color={Colors.secondary} />
-              <Text style={styles.cardTitle}>Today's Classes</Text>
-            </View>
-            <View style={styles.classList}>
-              {dashboardData.todayClasses.map((classItem) => (
-                <View key={classItem.id} style={styles.classListItem}>
-                  <View style={styles.classTime}>
-                    <Text style={styles.classTimeText}>{formatTime(classItem.startTime)}</Text>
-                    <View style={styles.classTimeLine} />
-                  </View>
-                  <View style={[styles.classCard, { borderLeftColor: Colors.primary }]}>
-                    <Text style={styles.classCardTitle}>
-                      {typeof classItem.course === 'object' ? classItem.course.courseName : 'Class'}
-                    </Text>
-                    <Text style={styles.classCardInfo}>
-                      {classItem.room.roomNumber}
-                    </Text>
+              {dashboardData.activeSessions.map((session) => (
+                <View key={session.id} style={styles.classInfo}>
+                  <Text style={styles.className}>
+                    {typeof session.course === "object"
+                      ? session.course.courseName
+                      : "Class"}
+                  </Text>
+                  <View style={styles.classDetails}>
+                    <View style={styles.classDetailItem}>
+                      <MaterialIcons
+                        name="access-time"
+                        size={16}
+                        color={Colors.textSecondary}
+                      />
+                      <Text style={styles.classDetailText}>
+                        Started at{" "}
+                        {new Date(session.startTime).toLocaleTimeString(
+                          "en-US",
+                          {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          },
+                        )}
+                      </Text>
+                    </View>
+                    <View style={styles.classDetailItem}>
+                      <MaterialIcons
+                        name="room"
+                        size={16}
+                        color={Colors.textSecondary}
+                      />
+                      <Text style={styles.classDetailText}>
+                        {session.room.roomNumber}
+                      </Text>
+                    </View>
+                    <View style={styles.classDetailItem}>
+                      <MaterialIcons
+                        name="people"
+                        size={16}
+                        color={Colors.textSecondary}
+                      />
+                      <Text style={styles.classDetailText}>
+                        {session.totalPresent || 0}/
+                        {session.totalStudentsEnrolled} Present
+                      </Text>
+                    </View>
                   </View>
                 </View>
               ))}
             </View>
-          </View>
-        )}
+          )}
+
+        {/* Today's Classes */}
+        {dashboardData?.todayClasses &&
+          dashboardData.todayClasses.length > 0 && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <MaterialIcons
+                  name="today"
+                  size={24}
+                  color={Colors.secondary}
+                />
+                <Text style={styles.cardTitle}>Today's Classes</Text>
+              </View>
+              <View style={styles.classList}>
+                {dashboardData.todayClasses.map((classItem) => (
+                  <View key={classItem.id} style={styles.classListItem}>
+                    <View style={styles.classTime}>
+                      <Text style={styles.classTimeText}>
+                        {formatTime(classItem.startTime)}
+                      </Text>
+                      <View style={styles.classTimeLine} />
+                    </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.classCard,
+                        { borderLeftColor: Colors.primary },
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => handleOpenClassDetails(classItem)}
+                    >
+                      <Text style={styles.classCardTitle}>
+                        {typeof classItem.course === "object"
+                          ? classItem.course.courseName
+                          : "Class"}
+                      </Text>
+                      <Text style={styles.classCardInfo}>
+                        Location: {classItem.room.roomNumber}
+                      </Text>
+                      <Text style={styles.classCardInfo}>
+                        Semester: {classItem.course.semester}
+                      </Text>
+                      <Text style={styles.classCardInfo}>
+                        Class: {classItem.programCode} - {classItem.section}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
         {/* Quick Stats */}
         {dashboardData?.stats && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="assessment" size={24} color={Colors.secondary} />
+              <MaterialIcons
+                name="assessment"
+                size={24}
+                color={Colors.secondary}
+              />
               <Text style={styles.cardTitle}>Quick Stats</Text>
             </View>
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{dashboardData.stats.totalCourses}</Text>
+                <Text style={styles.statValue}>
+                  {dashboardData.stats.totalCourses}
+                </Text>
                 <Text style={styles.statLabel}>Courses</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{dashboardData.stats.totalStudents}</Text>
+                <Text style={styles.statValue}>
+                  {dashboardData.stats.totalStudents}
+                </Text>
                 <Text style={styles.statLabel}>Students</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{dashboardData.stats.classesToday}</Text>
+                <Text style={styles.statValue}>
+                  {dashboardData.stats.classesToday}
+                </Text>
                 <Text style={styles.statLabel}>Classes Today</Text>
               </View>
             </View>
@@ -447,12 +768,22 @@ function TeacherDashboard({ user }: { user: User }) {
 
         {/* Quick Actions */}
         <View style={styles.actionsGrid}>
-          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/timetable')}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push("/(tabs)/timetable")}
+          >
             <MaterialIcons name="class" size={32} color={Colors.secondary} />
             <Text style={styles.actionText}>My Classes</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/(tabs)/statistics')}>
-            <MaterialIcons name="bar-chart" size={32} color={Colors.secondary} />
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push("/(tabs)/statistics")}
+          >
+            <MaterialIcons
+              name="bar-chart"
+              size={32}
+              color={Colors.secondary}
+            />
             <Text style={styles.actionText}>Reports</Text>
           </TouchableOpacity>
         </View>

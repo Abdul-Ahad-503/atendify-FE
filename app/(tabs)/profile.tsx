@@ -62,7 +62,7 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={styles.errorText}>Unable to load profile</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadUser}>
@@ -84,7 +84,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <MaterialIcons name="person" size={32} color={Colors.primary} />
         <Text style={styles.headerTitle}>Profile</Text>

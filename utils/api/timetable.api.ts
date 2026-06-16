@@ -27,6 +27,8 @@ export interface WeeklyTimetable {
   Wednesday: TimetableEntry[];
   Thursday: TimetableEntry[];
   Friday: TimetableEntry[];
+  Saturday: TimetableEntry[];
+  Sunday?: TimetableEntry[]; // Optional, in case Sunday classes are added in the future
 }
 
 export interface StudentCohortTimetableRequest {
@@ -56,6 +58,8 @@ const mapByDayToWeeklyTimetable = (byDay: any): WeeklyTimetable => {
     Wednesday: mapEntries(byDay?.Wednesday),
     Thursday: mapEntries(byDay?.Thursday),
     Friday: mapEntries(byDay?.Friday),
+    Saturday: mapEntries(byDay?.Saturday),
+    Sunday: mapEntries(byDay?.Sunday),
   };
 };
 

@@ -75,6 +75,8 @@ export interface Subject {
 
 // Timetable Types
 export interface TimetableEntry {
+  section: string;
+  programCode: string;
   id: string;
   course: Course;
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
@@ -223,6 +225,8 @@ export interface RegisterRequest {
   studentId?: string;
   semester?: number;
   section?: string;
+  department?: string;
+  program?: string;
   shift?: "MORNING" | "EVENING";
   // Teacher fields
   employeeId?: string;
@@ -238,7 +242,116 @@ export interface MarkAttendanceRequest {
   deviceInfo?: string;
 }
 
+export interface TeacherMarkAttendanceRequest {
+  classId: string;
+  courseId: string;
+  details: {
+    courseName?: string;
+    courseCode?: string;
+    subjectName?: string;
+    subjectCode?: string;
+    roomNumber?: string;
+    programCode?: string;
+    section?: string;
+    semester?: string;
+    dayOfWeek?: string;
+    startTime?: string;
+    endTime?: string;
+  };
+  location: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number | null;
+  };
+  deviceInfo?: string;
+}
+
 export interface StartSessionRequest {
   timetableEntryId: string;
   roomId: string;
+}
+
+// Teacher Attendance Types
+export interface TeacherMeeting {
+  meetingId: string;
+  courseCode: string;
+  courseName: string;
+  day: string;
+  dayOfWeek: number;
+  timeStart: string;
+  timeEnd: string;
+  roomNo: string;
+  enrolledCount: number;
+  section: string;
+  semester: number;
+  offeringId: string;
+  timetableEntryId?: string;
+}
+
+export interface StartAttendanceSessionResponse {
+  sessionId: string;
+  meetingId: string;
+  enrolledStudentsCount: number;
+  studentsToNotify: Array<{
+    studentId: string;
+    name: string;
+    email: string;
+  }>;
+  teacherLocation: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface MeetingAttendanceSummary {
+  present: number;
+  absent: number;
+  total: number;
+  avgDistance: number;
+  sessionId: string;
+  isActive: boolean;
+}
+
+export interface MeetingAttendanceRecord {
+  _id: string;
+  studentId: {
+    _id: string;
+    name: string;
+    rollNumber: string;
+    email: string;
+  };
+  status: "present" | "absent" | "late";
+  markedAt: string;
+  distanceMeters: number;
+  withinRadius: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
+export interface MeetingAttendanceReport {
+  summary: MeetingAttendanceSummary;
+  records: MeetingAttendanceRecord[];
+}
+
+export interface StartTeacherSessionRequest {
+  meetingId: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
+  details: {
+    courseName: string;
+    courseCode: string;
+    roomNumber: string;
+    section: string;
+    semester: number;
+    enrolledCount: number;
+  };
+  deviceInfo?: string;
+}
+
+export interface PushTokenRequest {
+  pushToken: string;
 }

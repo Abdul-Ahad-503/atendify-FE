@@ -4,12 +4,13 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,11 +25,17 @@ export default function BackgroundPermissionScreen() {
   }, []);
 
   const checkPermission = async () => {
-    const { status } = await Location.getBackgroundPermissionsAsync();
+    const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
+    if (fgStatus !== "granted") {
+      setPermissionStatus(fgStatus === "denied" ? "denied" : "undetermined");
+      return;
+    }
+
+    const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
     setPermissionStatus(
-      status === "granted"
+      bgStatus === "granted"
         ? "granted"
-        : status === "denied"
+        : bgStatus === "denied"
           ? "denied"
           : "undetermined",
     );
@@ -36,10 +43,26 @@ export default function BackgroundPermissionScreen() {
 
   const requestPermission = async () => {
     try {
-      const { status } = await Location.requestBackgroundPermissionsAsync();
-      setPermissionStatus(status === "granted" ? "granted" : "denied");
+      const { status: fgStatus } =
+        await Location.requestForegroundPermissionsAsync();
+      if (fgStatus !== "granted") {
+        setPermissionStatus(fgStatus === "denied" ? "denied" : "undetermined");
+        Alert.alert(
+          "Permission Required",
+          "Foreground location is required before enabling background access.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
+          ],
+        );
+        return;
+      }
 
-      if (status === "granted") {
+      const { status: bgStatus } =
+        await Location.requestBackgroundPermissionsAsync();
+      setPermissionStatus(bgStatus === "granted" ? "granted" : "denied");
+
+      if (bgStatus === "granted") {
         router.push("/permissions/battery");
       } else {
         Alert.alert(
@@ -47,7 +70,7 @@ export default function BackgroundPermissionScreen() {
           "Background location is needed for continuous attendance monitoring.",
           [
             { text: "Cancel", style: "cancel" },
-            { text: "Try Again", onPress: () => requestPermission() },
+            { text: "Open Settings", onPress: () => Linking.openSettings() },
           ],
         );
       }
@@ -69,7 +92,7 @@ export default function BackgroundPermissionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Setup Permissions</Text>

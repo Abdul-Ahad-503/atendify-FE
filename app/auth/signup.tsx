@@ -170,6 +170,9 @@ export default function SignupScreen() {
     }
 
     setLoading(true);
+    const selectedDepartment = departments.find((d) => d.code === departmentId);
+
+    const selectedProgram = programs.find((p) => p.code === programId);
 
     try {
       const userData: RegisterRequest = {
@@ -178,9 +181,12 @@ export default function SignupScreen() {
         password,
         role,
         departmentId, // code (e.g. CS) - backend resolves it
+        department: selectedDepartment?.name || "",
+
         ...(role === "student"
           ? {
               programId, // code (e.g. BSCS) - backend resolves it
+              program: selectedProgram?.name || "",
               rollNumber: rollNumber.trim(),
               studentId: rollNumber.trim(),
               semester,
@@ -288,7 +294,7 @@ export default function SignupScreen() {
         ];
 
   return (
-    <SafeAreaView style={styles.outerContainer} edges={["top"]}>
+    <SafeAreaView style={styles.outerContainer}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}

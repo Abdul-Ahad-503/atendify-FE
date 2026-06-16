@@ -1,5 +1,6 @@
 import { BorderRadius, Colors, Spacing, Typography } from "@/constants/theme";
 import { authApi, STORAGE_KEYS } from "@/utils/api";
+import { registerPushToken } from "@/utils/notifications";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -65,10 +66,15 @@ export default function LoginScreen() {
       );
 
       if (onboardingCompleted === "true") {
-        // User has already completed onboarding, go to main app
-        router.replace("/(tabs)");
+        registerPushToken();
+        // Route based on role
+        if (response.user.role === "teacher") {
+          router.replace("/teacher");
+        } else {
+          router.replace("/(tabs)");
+        }
       } else {
-        // First time login, show permissions setup
+        registerPushToken();
         router.replace("/permissions/location");
       }
     } catch (error: any) {
@@ -80,7 +86,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.outerContainer} edges={["top"]}>
+    <SafeAreaView style={styles.outerContainer}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}

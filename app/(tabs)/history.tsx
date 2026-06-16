@@ -256,7 +256,7 @@ export default function HistoryScreen() {
       : history;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <MaterialIcons name="history" size={32} color={Colors.primary} />
