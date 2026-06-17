@@ -20,10 +20,12 @@ export default function AttendanceResultScreen() {
   const courseCode = getParam(params.courseCode) || "";
   const courseName = getParam(params.courseName) || "";
   const status = getParam(params.status) || "success";
-  const distance = getParam(params.distance) || "8m";
-  const radius = getParam(params.radius) || "10m";
+  const distance = getParam(params.distance) || "";
+  const radius = getParam(params.radius) || "";
+  const markedAt = getParam(params.markedAt) || "";
 
-  const isPresent = status === "success";
+  const isPresent = status === "present" || status === "success";
+  const isLate = status === "late";
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -33,6 +35,10 @@ export default function AttendanceResultScreen() {
           {isPresent ? (
             <View style={styles.successIcon}>
               <MaterialIcons name="check-circle" size={80} color="#10B981" />
+            </View>
+          ) : isLate ? (
+            <View style={styles.successIcon}>
+              <MaterialIcons name="access-time" size={80} color="#F59E0B" />
             </View>
           ) : (
             <View style={styles.failureIcon}>
@@ -46,7 +52,7 @@ export default function AttendanceResultScreen() {
           style={[
             styles.statusContainer,
             {
-              backgroundColor: isPresent ? "#D1FAE5" : "#FEE2E2",
+              backgroundColor: isPresent ? "#D1FAE5" : isLate ? "#FEF3C7" : "#FEE2E2",
             },
           ]}
         >
@@ -54,11 +60,11 @@ export default function AttendanceResultScreen() {
             style={[
               styles.statusText,
               {
-                color: isPresent ? "#047857" : "#991B1B",
+                color: isPresent ? "#047857" : isLate ? "#92400E" : "#991B1B",
               },
             ]}
           >
-            {isPresent ? "✅ MARKED PRESENT" : "❌ MARKED ABSENT"}
+            {isPresent ? "✅ MARKED PRESENT" : isLate ? "⏰ MARKED LATE" : "❌ MARKED ABSENT"}
           </Text>
         </View>
 
@@ -76,7 +82,7 @@ export default function AttendanceResultScreen() {
               <Text
                 style={[
                   styles.distanceValue,
-                  { color: isPresent ? "#10B981" : "#EF4444" },
+                  { color: isPresent ? "#10B981" : isLate ? "#F59E0B" : "#EF4444" },
                 ]}
               >
                 {distance}
@@ -84,9 +90,9 @@ export default function AttendanceResultScreen() {
               <Text style={styles.distanceSubtext}>Radius Limit: {radius}</Text>
             </View>
             <MaterialIcons
-              name={isPresent ? "check-circle" : "alert-circle"}
+              name={isPresent ? "check-circle" : isLate ? "access-time" : "alert-circle"}
               size={60}
-              color={isPresent ? "#10B981" : "#EF4444"}
+              color={isPresent ? "#10B981" : isLate ? "#F59E0B" : "#EF4444"}
             />
           </View>
         </View>
@@ -96,26 +102,28 @@ export default function AttendanceResultScreen() {
           style={[
             styles.explanationCard,
             {
-              backgroundColor: isPresent ? "#D1FAE520" : "#FEE2E220",
+              backgroundColor: isPresent ? "#D1FAE520" : isLate ? "#FEF3C720" : "#FEE2E220",
             },
           ]}
         >
           <MaterialIcons
-            name={isPresent ? "info" : "warning"}
+            name={isPresent ? "info" : isLate ? "access-time" : "warning"}
             size={24}
-            color={isPresent ? "#10B981" : "#EF4444"}
+            color={isPresent ? "#10B981" : isLate ? "#F59E0B" : "#EF4444"}
           />
           <Text
             style={[
               styles.explanationText,
               {
-                color: isPresent ? "#047857" : "#991B1B",
+                color: isPresent ? "#047857" : isLate ? "#92400E" : "#991B1B",
               },
             ]}
           >
             {isPresent
               ? "You are within the acceptable range. Your attendance is marked as present."
-              : "You are outside the acceptable range. Your attendance is marked as absent."}
+              : isLate
+                ? "You are within range but arrived after the late cutoff time."
+                : "You are outside the acceptable range. Your attendance is marked as absent."}
           </Text>
         </View>
 
@@ -124,7 +132,11 @@ export default function AttendanceResultScreen() {
           <MaterialIcons name="schedule" size={20} color={Colors.secondary} />
           <View>
             <Text style={styles.timestampLabel}>Marked At</Text>
-            <Text style={styles.timestamp}>{new Date().toLocaleString()}</Text>
+            <Text style={styles.timestamp}>
+              {markedAt
+                ? new Date(markedAt).toLocaleString()
+                : new Date().toLocaleString()}
+            </Text>
           </View>
         </View>
 
@@ -132,7 +144,7 @@ export default function AttendanceResultScreen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => router.push("/student")}
+            onPress={() => router.push("/(tabs)")}
           >
             <MaterialIcons name="home" size={20} color={Colors.surface} />
             <Text style={styles.primaryButtonText}>Back to Home</Text>

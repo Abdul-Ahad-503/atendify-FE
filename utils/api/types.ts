@@ -348,8 +348,19 @@ export interface StartTeacherSessionRequest {
     section: string;
     semester: number;
     enrolledCount: number;
+    timeStart?: string;
+    timeEnd?: string;
   };
   deviceInfo?: string;
+}
+
+export interface MarkAttendanceResponse {
+  attendanceId: string;
+  status: 'present' | 'absent' | 'late';
+  distance: string;
+  withinRadius: boolean;
+  radiusMeters: number;
+  markedAt: string;
 }
 
 export interface PushTokenRequest {

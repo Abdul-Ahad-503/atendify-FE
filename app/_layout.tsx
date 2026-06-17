@@ -31,7 +31,11 @@ export default function RootLayout() {
       return;
     }
 
-    import("expo-notifications").then((Notifications) => {
+    let mounted = true;
+
+    import("expo-notifications").then(async (Notifications) => {
+      if (!mounted) return;
+
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
@@ -53,18 +57,64 @@ export default function RootLayout() {
           const data = response.notification.request.content.data as {
             action?: string;
             meetingId?: string;
+            courseName?: string;
+            courseCode?: string;
+            roomNo?: string;
+            timeStart?: string;
+            timeEnd?: string;
+            // Background task result fields
+            screen?: string;
+            status?: string;
+            distance?: string;
+            radius?: string;
+            markedAt?: string;
           };
 
+          // Handle background auto-attendance result (local notification tap)
+          if (data?.screen === "/student/attendance-result" && data?.meetingId) {
+            router.push({
+              pathname: "/student/attendance-result",
+              params: {
+                meetingId: data.meetingId,
+                courseName: data.courseName || "",
+                courseCode: data.courseCode || "",
+                status: data.status || "success",
+                distance: data.distance || "",
+                radius: data.radius || "",
+                markedAt: data.markedAt || "",
+              },
+            });
+            return;
+          }
+
+          // Handle FCM push notification tap — pass all course details
           if (data?.action === "MARK_ATTENDANCE" && data?.meetingId) {
             router.push({
               pathname: "/student/mark-attendance",
-              params: { meetingId: data.meetingId },
+              params: {
+                meetingId: data.meetingId,
+                courseName: data.courseName || "",
+                courseCode: data.courseCode || "",
+                roomNo: data.roomNo || "",
+                timeStart: data.timeStart || "",
+                timeEnd: data.timeEnd || "",
+              },
             });
           }
         });
+
+      // Register background task and process pending marks
+      try {
+        const bgModule = await import("../utils/background-attendance");
+        bgModule.initBackgroundTask();
+        bgModule.processPendingMarks();
+      } catch (err) {
+        console.log("⚠️ Background task registration skipped (expected in dev):", err);
+      }
     });
 
     return () => {
+      mounted = false;
       import("expo-notifications").then((Notifications) => {
         if (notificationSub.current) {
           notificationSub.current?.remove?.();

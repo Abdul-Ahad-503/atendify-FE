@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -43,6 +44,8 @@ export default function AttendanceSessionScreen() {
   const enrolledCount = parseInt(getParam(params.enrolledCount) || "0");
 
   const [attendanceCount, setAttendanceCount] = useState(0);
+  const [absentCount, setAbsentCount] = useState(0);
+  const [lateCount, setLateCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [endingSession, setEndingSession] = useState(false);
@@ -79,7 +82,9 @@ export default function AttendanceSessionScreen() {
       const report = await attendanceApi.getMeetingAttendance(meetingId);
 
       if (report && report.summary) {
-        setAttendanceCount(report.summary.present);
+        setAttendanceCount(report.summary.present || 0);
+        setAbsentCount(report.summary.absent || 0);
+        setLateCount(report.summary.late || 0);
       }
     } catch (error) {
       console.error("Error fetching attendance count:", error);
@@ -163,8 +168,9 @@ export default function AttendanceSessionScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Meeting Info Card */}
-      <View style={styles.infoCard}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Meeting Info Card */}
+        <View style={styles.infoCard}>
         <View style={styles.infoHeader}>
           <View>
             <Text style={styles.courseCode}>{courseCode}</Text>
@@ -261,12 +267,24 @@ export default function AttendanceSessionScreen() {
           </View>
 
           <View style={styles.statCard}>
-            <MaterialIcons name="person" size={32} color="#6366F1" />
-            <Text style={styles.statValue}>
-              {enrolledCount - attendanceCount}
-            </Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <MaterialIcons name="access-time" size={32} color="#F59E0B" />
+            <Text style={styles.statValue}>{lateCount}</Text>
+            <Text style={styles.statLabel}>Late</Text>
           </View>
+
+          <View style={styles.statCard}>
+            <MaterialIcons name="cancel" size={32} color="#EF4444" />
+            <Text style={styles.statValue}>{absentCount}</Text>
+            <Text style={styles.statLabel}>Absent</Text>
+          </View>
+        </View>
+
+        {/* Pending Count */}
+        <View style={styles.pendingRow}>
+          <Text style={styles.pendingLabel}>Still Pending:</Text>
+          <Text style={styles.pendingValue}>
+            {Math.max(0, enrolledCount - attendanceCount - lateCount - absentCount)}
+          </Text>
         </View>
       </View>
 
@@ -313,6 +331,7 @@ export default function AttendanceSessionScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -321,6 +340,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  scrollContent: {
+    paddingBottom: Spacing.xl,
   },
   header: {
     flexDirection: "row",
@@ -531,6 +553,22 @@ const styles = StyleSheet.create({
     ...Typography.small,
     color: Colors.textPrimary,
     lineHeight: 20,
+  },
+  pendingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  pendingLabel: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+  },
+  pendingValue: {
+    ...Typography.h3,
+    color: Colors.textPrimary,
+    fontWeight: "700",
   },
   buttonContainer: {
     marginHorizontal: Spacing.lg,

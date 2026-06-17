@@ -10,7 +10,7 @@ import {
 import { TeacherMeeting } from "@/utils/api/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -90,52 +90,8 @@ function StudentDashboard({ user }: { user: User }) {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
-  const pollingRef = useRef<any>(null);
-  const notifiedSessions = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    // Start polling when dashboard loads
-    pollingRef.current = setInterval(async () => {
-      if (!dashboardData?.todayClasses) return;
-
-      for (const classItem of dashboardData.todayClasses) {
-        const meetingId = classItem.id;
-        if (!meetingId || notifiedSessions.current.has(meetingId)) continue;
-
-        try {
-          const result = await attendanceApi.checkActiveSession(meetingId);
-          if (result.isActive) {
-            notifiedSessions.current.add(meetingId); // don't alert twice
-            Alert.alert(
-              "📋 Attendance Started",
-              `Mark attendance for ${
-                typeof classItem.course === "object"
-                  ? classItem.course.courseName
-                  : "your class"
-              }`,
-              [
-                { text: "Later", style: "cancel" },
-                {
-                  text: "Mark Now",
-                  onPress: () =>
-                    router.push({
-                      pathname: "/student/mark-attendance",
-                      params: { meetingId },
-                    }),
-                },
-              ],
-            );
-          }
-        } catch (error) {
-          // silently ignore polling errors
-        }
-      }
-    }, 10000); // poll every 10 seconds
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [dashboardData]); // restart when dashboard data loads
+  // Auto-polling removed — students rely on push notifications
+  // to be alerted when a teacher starts a session.
   useEffect(() => {
     loadDashboard();
   }, []);
@@ -278,13 +234,22 @@ function StudentDashboard({ user }: { user: User }) {
                 }}
                 onPress={async () => {
                   const meetingId = classItem.id;
+                  const courseObj =
+                    typeof classItem.course === "object" ? classItem.course : null;
                   try {
                     const result =
                       await attendanceApi.checkActiveSession(meetingId);
                     if (result.isActive) {
                       router.push({
                         pathname: "/student/mark-attendance",
-                        params: { meetingId },
+                        params: {
+                          meetingId,
+                          courseName: courseObj?.courseName || "",
+                          courseCode: courseObj?.courseCode || "",
+                          roomNo: classItem.room?.roomNumber || "",
+                          timeStart: classItem.startTime || "",
+                          timeEnd: classItem.endTime || "",
+                        },
                       });
                     } else {
                       Alert.alert(
@@ -489,53 +454,6 @@ function TeacherDashboard({ user }: { user: User }) {
   const [refreshing, setRefreshing] = useState(false);
   const [todaysMeetings, setTodaysMeetings] = useState<TeacherMeeting[]>([]);
   const router = useRouter();
-
-  const pollingRef = useRef<any>(null);
-  const notifiedSessions = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    // Start polling when dashboard loads
-    pollingRef.current = setInterval(async () => {
-      if (!dashboardData?.todayClasses) return;
-
-      for (const classItem of dashboardData.todayClasses) {
-        const meetingId = classItem.id;
-        if (!meetingId || notifiedSessions.current.has(meetingId)) continue;
-
-        try {
-          const result = await attendanceApi.checkActiveSession(meetingId);
-          if (result.isActive) {
-            notifiedSessions.current.add(meetingId); // don't alert twice
-            Alert.alert(
-              "📋 Attendance Started",
-              `Mark attendance for ${
-                typeof classItem.course === "object"
-                  ? classItem.course.courseName
-                  : "your class"
-              }`,
-              [
-                { text: "Later", style: "cancel" },
-                {
-                  text: "Mark Now",
-                  onPress: () =>
-                    router.push({
-                      pathname: "/student/mark-attendance",
-                      params: { meetingId },
-                    }),
-                },
-              ],
-            );
-          }
-        } catch (error) {
-          // silently ignore polling errors
-        }
-      }
-    }, 10000); // poll every 10 seconds
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [dashboardData]); // restart when dashboard data loads
 
   useEffect(() => {
     loadDashboard();

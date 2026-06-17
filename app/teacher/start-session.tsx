@@ -124,6 +124,8 @@ export default function StartSessionScreen() {
           section,
           semester: parseInt(semester),
           enrolledCount,
+          timeStart,
+          timeEnd,
         },
         deviceInfo,
       };

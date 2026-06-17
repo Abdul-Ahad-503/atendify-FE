@@ -1,8 +1,12 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
+import { attendanceApi } from "@/utils/api";
 import { getUserRole, UserRole } from "@/utils/userRole";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -233,26 +237,62 @@ export default function HistoryScreen() {
   const [filter, setFilter] = useState<"all" | "present" | "late" | "absent">(
     "all",
   );
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadUserRole();
   }, []);
+
+  useEffect(() => {
+    if (userRole) {
+      loadHistory();
+    }
+  }, [userRole]);
 
   const loadUserRole = async () => {
     const role = await getUserRole();
     setUserRole(role);
   };
 
-  const history =
-    userRole === "teacher"
-      ? TEACHER_ATTENDANCE_HISTORY
-      : STUDENT_ATTENDANCE_HISTORY;
+  const loadHistory = async () => {
+    try {
+      setLoading(true);
+      if (userRole === "student") {
+        const data = await attendanceApi.getStudentHistory();
+        setHistory(data.records || []);
+      } else {
+        const data = await attendanceApi.getTeacherHistory();
+        setHistory(data.records || []);
+      }
+    } catch (error) {
+      console.error("Error loading history:", error);
+      setHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      const data = userRole === "student"
+        ? await attendanceApi.getStudentHistory()
+        : await attendanceApi.getTeacherHistory();
+      setHistory(data.records || []);
+    } catch (error) {
+      console.error("Error refreshing history:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const filteredHistory =
     userRole === "student"
       ? filter === "all"
         ? history
-        : history.filter((item) => "status" in item && item.status === filter)
+        : history.filter((item: any) => item.status === filter)
       : history;
 
   return (
@@ -354,147 +394,152 @@ export default function HistoryScreen() {
         </ScrollView>
       )}
 
-      {/* History List */}
-      <ScrollView style={styles.content}>
-        <View style={styles.historyList}>
-          {filteredHistory.map((item, index) => (
-            <View key={index} style={styles.historyCard}>
-              <View style={styles.historyHeader}>
-                <Text style={styles.historyDate}>{item.date}</Text>
-                {userRole === "student" && "status" in item && (
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: getStatusColor(item.status) + "20" },
-                    ]}
-                  >
-                    {getStatusIcon(item.status)}
-                    <Text
+      {loading ? (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Loading history...</Text>
+        </View>
+      ) : filteredHistory.length === 0 ? (
+        <View style={styles.centerContent}>
+          <MaterialIcons name="history" size={64} color={Colors.border} />
+          <Text style={styles.errorTitle}>No Records</Text>
+          <Text style={styles.errorMessage}>No attendance records found</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredHistory}
+          keyExtractor={(_item: any, idx: number) => _item._id || String(idx)}
+          contentContainerStyle={styles.historyList}
+          refreshControl={
+            userRole === "student" ? (
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            ) : undefined
+          }
+          renderItem={({ item }) => {
+            // Detect data format: real API vs dummy
+            const isRealData = "_id" in item && "offeringId" in item;
+
+            // Derive display fields from whatever format we have
+            const courseCode = isRealData
+              ? item.offeringId?.courseId?.code || "N/A"
+              : item.courseCode || "";
+            const subjectName = isRealData
+              ? item.offeringId?.courseId?.name || "Course"
+              : item.subject || "";
+            const status = isRealData ? item.status : item.status;
+            const dateDisplay = isRealData
+              ? (() => { try { return new Date(item.markedAt).toLocaleDateString(); } catch { return item.markedAt; } })()
+              : item.date;
+            const timeDisplay = isRealData
+              ? `${item.meetingId?.timeStart || ""}-${item.meetingId?.timeEnd || ""}`
+              : item.time;
+            const roomDisplay = isRealData
+              ? `Room ${item.meetingId?.roomNo || "N/A"}`
+              : "";
+            const distanceDisplay = isRealData
+              ? `${item.distanceMeters}m`
+              : item.distance || "";
+            const isAuto = isRealData ? true : item.type === "auto";
+
+            return (
+              <View style={styles.historyCard}>
+                <View style={styles.historyHeader}>
+                  <Text style={styles.historyDate}>{dateDisplay}</Text>
+                  {userRole === "student" && (
+                    <View
                       style={[
-                        styles.statusText,
-                        { color: getStatusColor(item.status) },
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(status) + "20" },
                       ]}
                     >
-                      {item.status.charAt(0).toUpperCase() +
-                        item.status.slice(1)}
-                    </Text>
+                      {getStatusIcon(status)}
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(status) },
+                        ]}
+                      >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={styles.subjectName}>
+                  {isRealData ? courseCode : subjectName}
+                </Text>
+                {isRealData && (
+                  <Text style={styles.courseFullName}>{subjectName}</Text>
+                )}
+
+                {userRole === "student" ? (
+                  <View style={styles.detailsContainer}>
+                    <View style={styles.detailRow}>
+                      <MaterialIcons name="access-time" size={16} color={Colors.textSecondary} />
+                      <Text style={styles.detailText}>Time: {timeDisplay}</Text>
+                    </View>
+                    {isRealData && roomDisplay ? (
+                      <View style={styles.detailRow}>
+                        <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
+                        <Text style={styles.detailText}>{roomDisplay}</Text>
+                      </View>
+                    ) : null}
+                    <View style={styles.detailRow}>
+                      <MaterialIcons name={isAuto ? "gps-fixed" : "touch-app"} size={16} color={Colors.textSecondary} />
+                      <Text style={styles.detailText}>{isAuto ? "Auto-marked" : "Manual"}</Text>
+                    </View>
+                    {distanceDisplay && distanceDisplay !== "-" && (
+                      <View style={styles.detailRow}>
+                        <MaterialIcons name="place" size={16} color={Colors.textSecondary} />
+                        <Text style={styles.detailText}>Distance: {distanceDisplay}</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.detailsContainer}>
+                    <View style={styles.detailRow}>
+                      <MaterialIcons name="people" size={16} color={Colors.textSecondary} />
+                      <Text style={styles.detailText}>{item.course || item.courseName || item.section ? `${item.courseCode} - ${item.section}` : ""}</Text>
+                    </View>
+                    {(item.day || item.timeStart) && (
+                      <View style={styles.detailRow}>
+                        <MaterialIcons name="access-time" size={16} color={Colors.textSecondary} />
+                        <Text style={styles.detailText}>{item.day || ""} {item.timeStart ? `${item.timeStart}-${item.timeEnd || ""}` : ""}</Text>
+                      </View>
+                    )}
+                    {item.roomNo && (
+                      <View style={styles.detailRow}>
+                        <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
+                        <Text style={styles.detailText}>Room {item.roomNo}</Text>
+                      </View>
+                    )}
+                    <View style={styles.statsRow}>
+                      <View style={styles.statItem}>
+                        <MaterialIcons name="check-circle" size={16} color={Colors.success} />
+                        <Text style={[styles.statText, { color: Colors.success }]}>{item.present || 0}</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <MaterialIcons name="access-time" size={16} color={Colors.warning} />
+                        <Text style={[styles.statText, { color: Colors.warning }]}>{item.late || 0}</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <MaterialIcons name="cancel" size={16} color={Colors.error} />
+                        <Text style={[styles.statText, { color: Colors.error }]}>{item.absent || 0}</Text>
+                      </View>
+                      <Text style={styles.totalText}>/ {item.total || 0}</Text>
+                    </View>
+                    {item.total > 0 && (
+                      <View style={styles.percentageBar}>
+                        <View style={[styles.percentageFill, { width: `${((item.present || 0) / item.total) * 100}%` }]} />
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
-
-              <Text style={styles.subjectName}>{item.subject}</Text>
-
-              {userRole === "student" ? (
-                <View style={styles.detailsContainer}>
-                  <View style={styles.detailRow}>
-                    <MaterialIcons
-                      name="access-time"
-                      size={16}
-                      color={Colors.textSecondary}
-                    />
-                    <Text style={styles.detailText}>
-                      Time: {"time" in item ? item.time : ""}
-                    </Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <MaterialIcons
-                      name={
-                        "type" in item && item.type === "auto"
-                          ? "gps-fixed"
-                          : "touch-app"
-                      }
-                      size={16}
-                      color={Colors.textSecondary}
-                    />
-                    <Text style={styles.detailText}>
-                      {"type" in item && item.type === "auto"
-                        ? "Auto-marked"
-                        : "Manual"}
-                    </Text>
-                  </View>
-                  {"type" in item &&
-                    "distance" in item &&
-                    item.type === "auto" &&
-                    item.distance !== "-" && (
-                      <View style={styles.detailRow}>
-                        <MaterialIcons
-                          name="place"
-                          size={16}
-                          color={Colors.textSecondary}
-                        />
-                        <Text style={styles.detailText}>
-                          Distance: {item.distance}
-                        </Text>
-                      </View>
-                    )}
-                </View>
-              ) : (
-                <View style={styles.detailsContainer}>
-                  <View style={styles.detailRow}>
-                    <MaterialIcons
-                      name="people"
-                      size={16}
-                      color={Colors.textSecondary}
-                    />
-                    <Text style={styles.detailText}>
-                      {"course" in item ? item.course : ""}
-                    </Text>
-                  </View>
-                  <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                      <MaterialIcons
-                        name="check-circle"
-                        size={16}
-                        color={Colors.success}
-                      />
-                      <Text
-                        style={[styles.statText, { color: Colors.success }]}
-                      >
-                        {"present" in item ? item.present : 0}
-                      </Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <MaterialIcons
-                        name="access-time"
-                        size={16}
-                        color={Colors.warning}
-                      />
-                      <Text
-                        style={[styles.statText, { color: Colors.warning }]}
-                      >
-                        {"late" in item ? item.late : 0}
-                      </Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <MaterialIcons
-                        name="cancel"
-                        size={16}
-                        color={Colors.error}
-                      />
-                      <Text style={[styles.statText, { color: Colors.error }]}>
-                        {"absent" in item ? item.absent : 0}
-                      </Text>
-                    </View>
-                    <Text style={styles.totalText}>
-                      / {"total" in item ? item.total : 0}
-                    </Text>
-                  </View>
-                  <View style={styles.percentageBar}>
-                    <View
-                      style={[
-                        styles.percentageFill,
-                        {
-                          width: `${"present" in item && "total" in item ? (item.present / item.total) * 100 : 0}%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+            );
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -623,6 +668,11 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     color: Colors.textPrimary,
     fontWeight: "600",
+    marginBottom: Spacing.xs,
+  },
+  courseFullName: {
+    ...Typography.body,
+    color: Colors.textSecondary,
     marginBottom: Spacing.md,
   },
   detailsContainer: {
@@ -666,5 +716,25 @@ const styles = StyleSheet.create({
   percentageFill: {
     height: "100%",
     backgroundColor: Colors.success,
+  },
+  centerContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  loadingText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+  },
+  errorTitle: {
+    ...Typography.h2,
+    color: Colors.textPrimary,
+    marginTop: Spacing.md,
+  },
+  errorMessage: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
 });

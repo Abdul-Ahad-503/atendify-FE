@@ -94,8 +94,7 @@ export default function MarkAttendanceScreen() {
 
       const deviceInfo = Device.modelName || "Unknown Device";
 
-      // Mark attendance
-      await attendanceApi.markStudentAttendance({
+      const response = await attendanceApi.markStudentAttendance({
         meetingId,
         location: {
           latitude: location.coords.latitude,
@@ -104,14 +103,17 @@ export default function MarkAttendanceScreen() {
         radiusMeters: 10,
       });
 
-      // Success - navigate to result screen
+      // Success - navigate to result screen with real API data
       router.push({
         pathname: "/student/attendance-result",
         params: {
           meetingId,
           courseCode,
           courseName,
-          status: "success",
+          status: response.status,
+          distance: response.distance,
+          radius: `${response.radiusMeters}m`,
+          markedAt: response.markedAt,
         },
       });
     } catch (error) {

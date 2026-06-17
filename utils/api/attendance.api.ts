@@ -4,6 +4,7 @@ import {
   AttendancePercentage,
   AttendanceRecord,
   MarkAttendanceRequest,
+  MarkAttendanceResponse,
   MeetingAttendanceReport,
   PaginationInfo,
   StartAttendanceSessionResponse,
@@ -355,16 +356,18 @@ export const attendanceApi = {
     meetingId: string;
     location: { latitude: number; longitude: number };
     radiusMeters?: number;
-  }): Promise<void> => {
+  }): Promise<MarkAttendanceResponse> => {
     try {
-      const response = await apiClient.post<ApiResponse>(
+      const response = await apiClient.post<ApiResponse<MarkAttendanceResponse>>(
         "/attendance/student/mark",
         data,
       );
 
-      if (!response.data.success) {
-        throw new Error(response.data.message || "Failed to mark attendance");
+      if (response.data.success && response.data.data) {
+        return response.data.data;
       }
+
+      throw new Error(response.data.message || "Failed to mark attendance");
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -430,6 +433,35 @@ export const attendanceApi = {
           records: any[];
         }>
       >(`/attendance/student/history`, { params });
+
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      }
+
+      throw new Error("Invalid response from server");
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  /**
+   * Teacher: Get attendance history
+   */
+  getTeacherHistory: async (params?: {
+    startDate?: string;
+    endDate?: string;
+    offeringId?: string;
+  }): Promise<{
+    total: number;
+    records: any[];
+  }> => {
+    try {
+      const response = await apiClient.get<
+        ApiResponse<{
+          total: number;
+          records: any[];
+        }>
+      >(`/attendance/teacher/history`, { params });
 
       if (response.data.success && response.data.data) {
         return response.data.data;
