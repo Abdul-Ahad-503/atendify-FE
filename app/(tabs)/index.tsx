@@ -9,8 +9,8 @@ import {
 } from "@/utils/api";
 import { TeacherMeeting } from "@/utils/api/types";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -29,9 +29,11 @@ export default function HomeScreen() {
   const router = useRouter();
   const [todaysMeetings, setTodaysMeetings] = useState<TeacherMeeting[]>([]);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUser();
+    }, []),
+  );
 
   const loadUser = async () => {
     try {
@@ -92,9 +94,11 @@ function StudentDashboard({ user }: { user: User }) {
 
   // Auto-polling removed — students rely on push notifications
   // to be alerted when a teacher starts a session.
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, []),
+  );
 
   const loadDashboard = async () => {
     try {
@@ -455,9 +459,11 @@ function TeacherDashboard({ user }: { user: User }) {
   const [todaysMeetings, setTodaysMeetings] = useState<TeacherMeeting[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, []),
+  );
 
   const loadDashboard = async () => {
     try {

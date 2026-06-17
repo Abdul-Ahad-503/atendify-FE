@@ -4,7 +4,8 @@ import { STORAGE_KEYS } from "@/utils/api/config";
 import { getUserRole, UserRole } from "@/utils/userRole";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   ActivityIndicator,
   Alert,
@@ -41,9 +42,11 @@ export default function TimetableScreen() {
   const [timetable, setTimetable] = useState<WeeklyTimetable | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, []),
+  );
 
   const loadData = async () => {
     try {

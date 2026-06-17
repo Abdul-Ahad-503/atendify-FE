@@ -1,14 +1,13 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
 import { authApi, User } from "@/utils/api";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -19,12 +18,12 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(true);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUser();
+    }, []),
+  );
 
   const loadUser = async () => {
     try {
@@ -37,24 +36,17 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
+      { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
         style: "destructive",
         onPress: async () => {
           try {
             await authApi.logout();
-            router.replace("/auth/login");
-          } catch (error) {
-            console.error("Error during logout:", error);
-            // Still navigate to login even if API call fails
-            router.replace("/auth/login");
-          }
+          } catch (_) {}
+          router.replace("/auth/login");
         },
       },
     ]);
@@ -63,7 +55,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       </SafeAreaView>
@@ -73,10 +65,10 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
+        <View style={styles.centerContent}>
           <Text style={styles.errorText}>Unable to load profile</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadUser}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryBtnText}>Retry</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -86,258 +78,69 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <MaterialIcons name="person" size={32} color={Colors.primary} />
+        <MaterialIcons name="person" size={28} color={Colors.primary} />
         <Text style={styles.headerTitle}>Profile</Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* User Info Card */}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* User Card */}
         <View style={styles.userCard}>
-          <View
-            style={[
-              styles.avatarContainer,
-              user.role === "teacher" && {
-                backgroundColor: Colors.secondary + "20",
-              },
-            ]}
-          >
-            <MaterialIcons
-              name={user.role === "student" ? "school" : "person"}
-              size={64}
-              color={
-                user.role === "student" ? Colors.primary : Colors.secondary
-              }
-            />
+          <View style={[styles.avatar, user.role === "teacher" && { backgroundColor: Colors.secondary + "20" }]}>
+            <MaterialIcons name={user.role === "student" ? "school" : "person"} size={56} color={user.role === "student" ? Colors.primary : Colors.secondary} />
           </View>
           <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userId}>
-            {user.role === "student" ? user.rollNumber : user.employeeId}
-          </Text>
+          <Text style={styles.userId}>{user.role === "student" ? user.rollNumber : user.employeeId}</Text>
           <Text style={styles.userEmail}>{user.email}</Text>
-          {user.role && (
-            <View
-              style={[
-                styles.roleBadge,
-                {
-                  backgroundColor:
-                    user.role === "student" ? Colors.primary : Colors.secondary,
-                },
-              ]}
-            >
-              <MaterialIcons
-                name={user.role === "student" ? "school" : "person"}
-                size={16}
-                color={Colors.surface}
-              />
-              <Text style={styles.roleBadgeText}>
-                {user.role === "student" ? "Student" : "Teacher"}
-              </Text>
-            </View>
-          )}
+          <View style={[styles.roleBadge, { backgroundColor: user.role === "student" ? Colors.primary : Colors.secondary }]}>
+            <MaterialIcons name={user.role === "student" ? "school" : "person"} size={14} color={Colors.surface} />
+            <Text style={styles.roleBadgeText}>{user.role === "student" ? "Student" : "Teacher"}</Text>
+          </View>
         </View>
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
+        {/* Info */}
+        <View style={styles.section}>
           {user.role === "student" ? (
             <>
-              <View style={styles.infoRow}>
-                <MaterialIcons
-                  name="school"
-                  size={20}
-                  color={Colors.textSecondary}
-                />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Department</Text>
-                  <Text style={styles.infoValue}>
-                    {user.department || "N/A"}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.infoRow}>
-                <MaterialIcons
-                  name="date-range"
-                  size={20}
-                  color={Colors.textSecondary}
-                />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Semester</Text>
-                  <Text style={styles.infoValue}>
-                    {user.semester ? `${user.semester}th Semester` : "N/A"}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.infoRow}>
-                <MaterialIcons
-                  name="check-circle"
-                  size={20}
-                  color={user.isActive ? Colors.success : Colors.error}
-                />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Account Status</Text>
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      { color: user.isActive ? Colors.success : Colors.error },
-                    ]}
-                  >
-                    {user.isActive ? "Active" : "Inactive"}
-                  </Text>
-                </View>
-              </View>
+              <InfoRow icon="school" label="Department" value={user.department || "N/A"} />
+              <InfoRow icon="date-range" label="Semester" value={user.semester ? `${user.semester}th Semester` : "N/A"} />
+              <InfoRow icon="check-circle" label="Account" value={user.isActive ? "Active" : "Inactive"} valueColor={user.isActive ? Colors.success : Colors.error} />
             </>
           ) : (
             <>
-              <View style={styles.infoRow}>
-                <MaterialIcons
-                  name="business"
-                  size={20}
-                  color={Colors.textSecondary}
-                />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Department</Text>
-                  <Text style={styles.infoValue}>
-                    {user.department || "N/A"}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.infoRow}>
-                <MaterialIcons
-                  name="check-circle"
-                  size={20}
-                  color={user.isActive ? Colors.success : Colors.error}
-                />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Account Status</Text>
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      { color: user.isActive ? Colors.success : Colors.error },
-                    ]}
-                  >
-                    {user.isActive ? "Active" : "Inactive"}
-                  </Text>
-                </View>
-              </View>
+              <InfoRow icon="business" label="Department" value={user.department || "N/A"} />
+              <InfoRow icon="check-circle" label="Account" value={user.isActive ? "Active" : "Inactive"} valueColor={user.isActive ? Colors.success : Colors.error} />
             </>
           )}
         </View>
 
-        {/* Settings Section */}
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <MaterialIcons
-                name="notifications"
-                size={24}
-                color={Colors.icon}
-              />
-              <View style={styles.settingText}>
-                <Text style={styles.settingLabel}>Notifications</Text>
-                <Text style={styles.settingDescription}>
-                  {user.role === "student"
-                    ? "Class reminders and attendance alerts"
-                    : "Class updates and reports"}
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: Colors.border, true: Colors.primary + "80" }}
-              thumbColor={
-                notificationsEnabled ? Colors.primary : Colors.textSecondary
-              }
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <MaterialIcons name="location-on" size={24} color={Colors.icon} />
-              <View style={styles.settingText}>
-                <Text style={styles.settingLabel}>Location Permission</Text>
-                <Text style={styles.settingDescription}>
-                  {user.role === "student"
-                    ? "Auto-mark attendance"
-                    : "Track class sessions"}
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={locationEnabled}
-              onValueChange={setLocationEnabled}
-              trackColor={{ false: Colors.border, true: Colors.primary + "80" }}
-              thumbColor={
-                locationEnabled ? Colors.primary : Colors.textSecondary
-              }
-            />
-          </View>
-        </View>
-
-        {/* Teacher-Only Actions */}
+        {/* Teacher Action */}
         {user.role === "teacher" && (
-          <View style={styles.teacherActionSection}>
-            <Text style={styles.sectionTitle}>Teacher Actions</Text>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => router.push("/teacher/add-course-offering" as any)}
-            >
-              <MaterialIcons
-                name="add-circle"
-                size={24}
-                color={Colors.primary}
-              />
-              <View style={styles.actionButtonContent}>
-                <Text style={styles.actionButtonText}>Add Course Offering</Text>
-                <Text style={styles.actionButtonDescription}>
-                  Create a new course offering with timetable
-                </Text>
-              </View>
-              <MaterialIcons
-                name="chevron-right"
-                size={24}
-                color={Colors.icon}
-              />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.actionCard} onPress={() => router.push("/teacher/add-course-offering" as any)}>
+            <View style={[styles.actionIcon, { backgroundColor: Colors.secondary + "20" }]}>
+              <MaterialIcons name="add-circle" size={24} color={Colors.secondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.actionTitle}>Add Course Offering</Text>
+              <Text style={styles.actionDesc}>Create a new course offering with timetable</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color={Colors.textSecondary} />
+          </TouchableOpacity>
         )}
 
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem}>
-            <MaterialIcons name="edit" size={24} color={Colors.icon} />
-            <Text style={styles.menuText}>Edit Profile</Text>
-            <MaterialIcons name="chevron-right" size={24} color={Colors.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <MaterialIcons name="privacy-tip" size={24} color={Colors.icon} />
-            <Text style={styles.menuText}>Privacy Policy</Text>
-            <MaterialIcons name="chevron-right" size={24} color={Colors.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <MaterialIcons name="help" size={24} color={Colors.icon} />
-            <Text style={styles.menuText}>Help & Support</Text>
-            <MaterialIcons name="chevron-right" size={24} color={Colors.icon} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <MaterialIcons name="info" size={24} color={Colors.icon} />
-            <Text style={styles.menuText}>About Atendify</Text>
-            <MaterialIcons name="chevron-right" size={24} color={Colors.icon} />
-          </TouchableOpacity>
+        {/* Menu */}
+        <View style={styles.section}>
+          <MenuItem icon="privacy-tip" label="Privacy Policy" onPress={() => router.push("/privacy-policy" as any)} />
+          <MenuItem icon="help" label="Help & Support" onPress={() => router.push("/help-support" as any)} />
+          <MenuItem icon="info" label="About Atendify" onPress={() => router.push("/about" as any)} last />
         </View>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        {/* Logout */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <MaterialIcons name="logout" size={20} color={Colors.surface} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
-        <View style={styles.versionInfo}>
+        <View style={styles.versionRow}>
           <Text style={styles.versionText}>Atendify v1.0.2</Text>
         </View>
       </ScrollView>
@@ -345,11 +148,35 @@ export default function ProfileScreen() {
   );
 }
 
+function InfoRow({ icon, label, value, valueColor }: { icon: any; label: string; value: string; valueColor?: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <View style={styles.infoIconBox}>
+        <MaterialIcons name={icon} size={20} color={Colors.textSecondary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={[styles.infoValue, valueColor ? { color: valueColor } : undefined]}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function MenuItem({ icon, label, onPress, last }: { icon: any; label: string; onPress: () => void; last?: boolean }) {
+  return (
+    <TouchableOpacity style={[styles.menuItem, last && { borderBottomWidth: 0 }]} onPress={onPress} activeOpacity={0.6}>
+      <View style={styles.menuIconBox}>
+        <MaterialIcons name={icon} size={22} color={Colors.primary} />
+      </View>
+      <Text style={styles.menuLabel}>{label}</Text>
+      <MaterialIcons name="chevron-right" size={22} color={Colors.textSecondary} />
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  centerContent: { flex: 1, alignItems: "center", justifyContent: "center", gap: Spacing.md },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -359,244 +186,102 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
     gap: Spacing.md,
   },
-  headerTitle: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-  },
-  content: {
-    flex: 1,
-    padding: Spacing.md,
-  },
+  headerTitle: { ...Typography.h2, color: Colors.textPrimary },
+  scrollContent: { padding: Spacing.md, paddingBottom: Spacing.xl },
   userCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: Spacing.lg,
+    borderRadius: 16,
+    padding: Spacing.xl,
     alignItems: "center",
     marginBottom: Spacing.md,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 25,
-    elevation: 5,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  avatarContainer: {
-    width: 120,
-    height: 120,
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: Colors.primary + "20",
-    borderRadius: 60,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.md,
   },
-  userName: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-    fontWeight: "700",
-  },
-  userId: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  userEmail: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.md,
-  },
+  userName: { ...Typography.h2, color: Colors.textPrimary, fontWeight: "700", marginBottom: 4 },
+  userId: { ...Typography.body, color: Colors.textSecondary, marginBottom: 2 },
+  userEmail: { ...Typography.body, color: Colors.textSecondary, marginBottom: Spacing.md },
   roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: 20,
-    gap: Spacing.xs,
+    gap: 6,
     marginTop: Spacing.sm,
   },
-  roleBadgeText: {
-    ...Typography.body,
-    color: Colors.surface,
-    fontWeight: "600",
-  },
-  infoSection: {
+  roleBadgeText: { ...Typography.small, color: Colors.surface, fontWeight: "600" },
+  section: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
-    padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    overflow: "hidden",
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     gap: Spacing.md,
   },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  infoValue: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-  },
-  settingsSection: {
+  infoIconBox: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.background, alignItems: "center", justifyContent: "center" },
+  infoLabel: { ...Typography.small, color: Colors.textSecondary, marginBottom: 2 },
+  infoValue: { ...Typography.body, color: Colors.textPrimary, fontWeight: "600" },
+  actionCard: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    ...Typography.h3,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-    marginBottom: Spacing.md,
-  },
-  settingItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  settingInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
     gap: Spacing.md,
-  },
-  settingText: {
-    flex: 1,
-  },
-  settingLabel: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  settingDescription: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-  },
-  menuSection: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
+  actionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  actionTitle: { ...Typography.body, color: Colors.textPrimary, fontWeight: "600" },
+  actionDesc: { ...Typography.small, color: Colors.textSecondary, marginTop: 2 },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     gap: Spacing.md,
   },
-  menuText: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    flex: 1,
-  },
-  logoutButton: {
+  menuIconBox: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primary + "10", alignItems: "center", justifyContent: "center" },
+  menuLabel: { ...Typography.body, color: Colors.textPrimary, flex: 1 },
+  logoutBtn: {
     backgroundColor: Colors.error,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: Spacing.md,
+    paddingVertical: Spacing.md,
     borderRadius: 12,
     gap: Spacing.sm,
     marginBottom: Spacing.md,
   },
-  logoutText: {
-    ...Typography.body,
-    color: Colors.surface,
-    fontWeight: "600",
-  },
-  versionInfo: {
-    alignItems: "center",
-    paddingVertical: Spacing.lg,
-  },
-  versionText: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  errorText: {
-    ...Typography.body,
-    color: Colors.error,
-    marginBottom: Spacing.md,
-  },
-  retryButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    ...Typography.body,
-    color: Colors.surface,
-    fontWeight: "600",
-  },
-  teacherActionSection: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: Spacing.md,
-  },
-  actionButtonContent: {
-    flex: 1,
-  },
-  actionButtonText: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  actionButtonDescription: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-  },
+  logoutText: { ...Typography.body, color: Colors.surface, fontWeight: "600" },
+  versionRow: { alignItems: "center", paddingVertical: Spacing.lg },
+  versionText: { ...Typography.small, color: Colors.textSecondary },
+  errorText: { ...Typography.body, color: Colors.error },
+  retryButton: { backgroundColor: Colors.primary, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, borderRadius: 8 },
+  retryBtnText: { color: Colors.surface, fontWeight: "600" },
 });

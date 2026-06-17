@@ -160,8 +160,8 @@ export const authApi = {
    */
   logout: async (): Promise<void> => {
     try {
-      // Call logout endpoint if you have one
-      // await apiClient.post('/auth/logout');
+      // Call logout endpoint to end active sessions server-side
+      await apiClient.post('/auth/logout');
 
       // Clear all stored data
       await AsyncStorage.multiRemove([

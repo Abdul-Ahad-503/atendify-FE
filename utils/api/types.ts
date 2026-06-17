@@ -160,6 +160,8 @@ export interface TeacherDashboard {
     totalCourses: number;
     totalStudents: number;
     classesToday: number;
+    avgAttendance: number;
+    totalPresentToday: number;
     activeSessionsCount: number;
   };
 }

@@ -1,123 +1,115 @@
 import { Colors, Spacing, Typography } from "@/constants/theme";
-import { getUserRole, UserRole } from "@/utils/userRole";
+import {
+  attendanceApi,
+  authApi,
+  dashboardApi,
+  StudentDashboard,
+  TeacherDashboard,
+  User,
+} from "@/utils/api";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Dummy statistics data
-const STUDENT_STATS = {
-  overall: 84,
-  monthly: [
-    { month: "Sep", percentage: 82 },
-    { month: "Oct", percentage: 85 },
-    { month: "Nov", percentage: 88 },
-    { month: "Dec", percentage: 83 },
-    { month: "Jan", percentage: 84 },
-  ],
-  subjects: [
-    { name: "Mobile App Development", present: 9, total: 10, percentage: 90 },
-    { name: "Database Systems", present: 8, total: 10, percentage: 80 },
-    { name: "Software Engineering", present: 9, total: 10, percentage: 90 },
-    { name: "Web Technologies", present: 7, total: 10, percentage: 70 },
-    { name: "Data Structures", present: 8, total: 10, percentage: 80 },
-    { name: "Computer Networks", present: 9, total: 10, percentage: 90 },
-  ],
-};
-
-const TEACHER_STATS = {
-  overall: 87,
-  monthly: [
-    { month: "Sep", percentage: 85 },
-    { month: "Oct", percentage: 86 },
-    { month: "Nov", percentage: 89 },
-    { month: "Dec", percentage: 86 },
-    { month: "Jan", percentage: 87 },
-  ],
-  classes: [
-    {
-      name: "Mobile App Development",
-      course: "BS-CS 6A",
-      avgAttendance: 88,
-      students: 50,
-    },
-    {
-      name: "Web Technologies",
-      course: "BS-CS 5B",
-      avgAttendance: 89,
-      students: 45,
-    },
-    {
-      name: "Software Engineering",
-      course: "BS-SE 4A",
-      avgAttendance: 85,
-      students: 40,
-    },
-    {
-      name: "Mobile App Development",
-      course: "BS-CS 6B",
-      avgAttendance: 90,
-      students: 48,
-    },
-    {
-      name: "Web Technologies",
-      course: "BS-CS 5A",
-      avgAttendance: 86,
-      students: 42,
-    },
-  ],
-  lowAttendanceStudents: [
-    {
-      name: "Ali Hassan",
-      id: "CS-2020-001",
-      attendance: 65,
-      subject: "Web Technologies",
-    },
-    {
-      name: "Fatima Rana",
-      id: "CS-2020-042",
-      attendance: 68,
-      subject: "Mobile App Development",
-    },
-    {
-      name: "Usman Khan",
-      id: "SE-2021-015",
-      attendance: 70,
-      subject: "Software Engineering",
-    },
-  ],
-};
-
 export default function StatisticsScreen() {
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadUserRole();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadUser();
+    }, []),
+  );
 
-  const loadUserRole = async () => {
-    const role = await getUserRole();
-    setUserRole(role);
+  const loadUser = async () => {
+    try {
+      const userData = await authApi.getMe();
+      setUser(userData);
+    } catch (error) {
+      console.error("Error loading user:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (userRole === "teacher") {
-    return <TeacherStatistics />;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
   }
 
+  if (!user) return null;
+
+  if (user.role === "teacher") return <TeacherStatistics />;
   return <StudentStatistics />;
 }
 
 function StudentStatistics() {
-  const maxMonthly = Math.max(
-    ...STUDENT_STATS.monthly.map((m) => m.percentage),
+  const [dashboard, setDashboard] = useState<StudentDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, []),
   );
+
+  const loadData = async () => {
+    try {
+      const data = await dashboardApi.getStudentDashboard();
+      setDashboard(data);
+    } catch (error) {
+      console.error("Error loading student stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const overview = dashboard?.attendanceOverview || [];
+  const stats = dashboard?.stats;
+  const avg = stats?.averageAttendance || 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* Header */}
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+        }
+      >
         <View style={styles.header}>
-          <MaterialIcons name="bar-chart" size={32} color={Colors.primary} />
+          <MaterialIcons name="bar-chart" size={28} color={Colors.primary} />
           <Text style={styles.headerTitle}>Statistics</Text>
         </View>
 
@@ -125,239 +117,229 @@ function StudentStatistics() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Overall Attendance</Text>
           <View style={styles.overallContainer}>
-            <View style={styles.circularProgress}>
-              <Text style={styles.percentageValue}>
-                {STUDENT_STATS.overall}%
+            <View style={[styles.circularProgress, { borderColor: avg >= 75 ? Colors.success : avg >= 50 ? Colors.warning : Colors.error }]}>
+              <Text style={[styles.percentageValue, { color: avg >= 75 ? Colors.success : avg >= 50 ? Colors.warning : Colors.error }]}>
+                {avg}%
               </Text>
-              <Text style={styles.percentageLabel}>Total</Text>
+              <Text style={styles.percentageLabel}>Average</Text>
             </View>
           </View>
-          {STUDENT_STATS.overall < 75 && (
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: Colors.primary }]}>{stats?.totalCourses || 0}</Text>
+              <Text style={styles.statLabel}>Courses</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: Colors.success }]}>{stats?.presentToday || 0}</Text>
+              <Text style={styles.statLabel}>Present Today</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: Colors.error }]}>{stats?.criticalCourses || 0}</Text>
+              <Text style={styles.statLabel}>Critical</Text>
+            </View>
+          </View>
+          {avg < 75 && (
             <View style={styles.warningBox}>
               <MaterialIcons name="warning" size={20} color={Colors.warning} />
-              <Text style={styles.warningText}>
-                Your attendance is below 75%. Improve your attendance to avoid
-                issues.
-              </Text>
+              <Text style={styles.warningText}>Your attendance is below 75%.</Text>
             </View>
           )}
         </View>
 
-        {/* Monthly Trend */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Monthly Trend</Text>
-          <View style={styles.chartContainer}>
-            {STUDENT_STATS.monthly.map((month, index) => (
-              <View key={index} style={styles.barContainer}>
-                <View style={styles.barWrapper}>
-                  <View
-                    style={[
-                      styles.bar,
-                      { height: `${(month.percentage / maxMonthly) * 100}%` },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.barLabel}>{month.month}</Text>
-                <Text style={styles.barValue}>{month.percentage}%</Text>
-              </View>
-            ))}
+        {/* Course-wise Attendance */}
+        {overview.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Course Attendance</Text>
+            {overview.map((item: any) => {
+              const pct = item.percentage || 0;
+              const isCritical = pct < 75;
+              const courseCode = item.course?.courseCode || item.courseCode || "N/A";
+              const courseName = item.course?.courseName || item.courseName || "Course";
+              const isOpen = expandedCourse === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.courseBlock}
+                  onPress={() => setExpandedCourse(isOpen ? null : item.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.courseHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.courseName}>{courseCode}</Text>
+                      <Text style={styles.courseFullName}>{courseName}</Text>
+                    </View>
+                    <Text style={[styles.coursePct, { color: isCritical ? Colors.error : Colors.success }]}>
+                      {pct}%
+                    </Text>
+                    <MaterialIcons name={isOpen ? "expand-less" : "expand-more"} size={20} color={Colors.textSecondary} />
+                  </View>
+                  <View style={styles.progressBar}>
+                    <View style={[styles.progressFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: isCritical ? Colors.error : Colors.success }]} />
+                  </View>
+                  {isOpen && (
+                    <View style={styles.courseDetail}>
+                      <Text style={styles.detailText}>{item.classesAttended || 0} / {item.totalClasses || 0} classes attended</Text>
+                      <Text style={styles.detailText}>Status: {item.status || (isCritical ? "Critical" : "Good")}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
-        </View>
+        )}
 
-        {/* Subject-wise Attendance */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Subject-wise Attendance</Text>
-          <View style={styles.subjectList}>
-            {STUDENT_STATS.subjects.map((subject, index) => (
-              <View key={index} style={styles.subjectItem}>
-                <View style={styles.subjectHeader}>
-                  <Text style={styles.subjectName}>{subject.name}</Text>
-                  <Text
-                    style={[
-                      styles.subjectPercentage,
-                      {
-                        color:
-                          subject.percentage >= 75
-                            ? Colors.success
-                            : Colors.error,
-                      },
-                    ]}
-                  >
-                    {subject.percentage}%
-                  </Text>
-                </View>
-                <View style={styles.subjectInfo}>
-                  <Text style={styles.subjectText}>
-                    {subject.present} / {subject.total} classes
-                  </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${subject.percentage}%`,
-                        backgroundColor:
-                          subject.percentage >= 75
-                            ? Colors.success
-                            : Colors.error,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            ))}
+        {overview.length === 0 && (
+          <View style={styles.card}>
+            <View style={styles.emptyState}>
+              <MaterialIcons name="bar-chart" size={48} color={Colors.border} />
+              <Text style={styles.emptyTitle}>No Data Yet</Text>
+              <Text style={styles.emptySub}>Attendance stats will appear once you start marking attendance.</Text>
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 function TeacherStatistics() {
-  const maxMonthly = Math.max(
-    ...TEACHER_STATS.monthly.map((m) => m.percentage),
+  const [dashboard, setDashboard] = useState<TeacherDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, []),
   );
+
+  const loadData = async () => {
+    try {
+      const data = await dashboardApi.getTeacherDashboard();
+      setDashboard(data);
+    } catch (error) {
+      console.error("Error loading teacher stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Colors.secondary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const stats = dashboard?.stats;
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* Header */}
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.secondary]} />
+        }
+      >
         <View style={styles.header}>
-          <MaterialIcons name="bar-chart" size={32} color={Colors.secondary} />
+          <MaterialIcons name="bar-chart" size={28} color={Colors.secondary} />
           <Text style={styles.headerTitle}>Reports & Statistics</Text>
         </View>
 
-        {/* Overall Stats */}
+        {/* Key Metrics */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Average Attendance</Text>
-          <View style={styles.overallContainer}>
-            <View
-              style={[
-                styles.circularProgress,
-                { borderColor: Colors.secondary },
-              ]}
-            >
-              <Text
-                style={[styles.percentageValue, { color: Colors.secondary }]}
-              >
-                {TEACHER_STATS.overall}%
-              </Text>
-              <Text style={styles.percentageLabel}>Across All Classes</Text>
+          <Text style={styles.cardTitle}>Overview</Text>
+          <View style={styles.metricsGrid}>
+            <View style={styles.metricCard}>
+              <View style={[styles.metricIcon, { backgroundColor: Colors.secondary + "20" }]}>
+                <MaterialIcons name="school" size={28} color={Colors.secondary} />
+              </View>
+              <Text style={styles.metricValue}>{stats?.totalCourses || 0}</Text>
+              <Text style={styles.metricLabel}>Courses</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <View style={[styles.metricIcon, { backgroundColor: Colors.primary + "20" }]}>
+                <MaterialIcons name="people" size={28} color={Colors.primary} />
+              </View>
+              <Text style={styles.metricValue}>{stats?.totalStudents || 0}</Text>
+              <Text style={styles.metricLabel}>Students</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <View style={[styles.metricIcon, { backgroundColor: Colors.success + "20" }]}>
+                <MaterialIcons name="check-circle" size={28} color={Colors.success} />
+              </View>
+              <Text style={styles.metricValue}>{stats?.avgAttendance || 0}%</Text>
+              <Text style={styles.metricLabel}>Avg Attendance</Text>
             </View>
           </View>
         </View>
 
-        {/* Monthly Trend */}
+        {/* Today's Stats */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Monthly Trend</Text>
-          <View style={styles.chartContainer}>
-            {TEACHER_STATS.monthly.map((month, index) => (
-              <View key={index} style={styles.barContainer}>
-                <View style={styles.barWrapper}>
-                  <View
-                    style={[
-                      styles.bar,
-                      {
-                        height: `${(month.percentage / maxMonthly) * 100}%`,
-                        backgroundColor: Colors.secondary,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.barLabel}>{month.month}</Text>
-                <Text style={styles.barValue}>{month.percentage}%</Text>
-              </View>
-            ))}
+          <Text style={styles.cardTitle}>Today</Text>
+          <View style={styles.todayRow}>
+            <View style={styles.todayBox}>
+              <MaterialIcons name="class" size={24} color={Colors.secondary} />
+              <Text style={styles.todayValue}>{stats?.classesToday || 0}</Text>
+              <Text style={styles.todayLabel}>Classes</Text>
+            </View>
+            <View style={styles.todayBox}>
+              <MaterialIcons name="check-circle" size={24} color={Colors.success} />
+              <Text style={styles.todayValue}>{stats?.totalPresentToday || 0}</Text>
+              <Text style={styles.todayLabel}>Present</Text>
+            </View>
+            <View style={styles.todayBox}>
+              <MaterialIcons name="fiber-manual-record" size={24} color={Colors.error} />
+              <Text style={styles.todayValue}>{stats?.activeSessionsCount || 0}</Text>
+              <Text style={styles.todayLabel}>Active</Text>
+            </View>
           </View>
         </View>
 
-        {/* Class-wise Performance */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Class-wise Performance</Text>
-          <View style={styles.subjectList}>
-            {TEACHER_STATS.classes.map((classItem, index) => (
-              <View key={index} style={styles.subjectItem}>
-                <View style={styles.subjectHeader}>
-                  <View>
-                    <Text style={styles.subjectName}>{classItem.name}</Text>
-                    <Text style={styles.subjectCourse}>{classItem.course}</Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.subjectPercentage,
-                      { color: Colors.secondary },
-                    ]}
-                  >
-                    {classItem.avgAttendance}%
+        {/* Active Sessions Detail */}
+        {dashboard?.activeSessions && dashboard.activeSessions.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Active Sessions</Text>
+            {dashboard.activeSessions.map((s: any) => (
+              <View key={s.id} style={styles.sessionItem}>
+                <View style={styles.sessionDot} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sessionName}>{s.course?.courseName || "Class"}</Text>
+                  <Text style={styles.sessionMeta}>
+                    {s.totalPresent || 0}/{s.totalStudentsEnrolled || 0} present
+                    {s.section ? ` • ${s.section}` : ""}
                   </Text>
-                </View>
-                <View style={styles.subjectInfo}>
-                  <MaterialIcons
-                    name="people"
-                    size={16}
-                    color={Colors.textSecondary}
-                  />
-                  <Text style={styles.subjectText}>
-                    {classItem.students} Students
-                  </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${classItem.avgAttendance}%`,
-                        backgroundColor: Colors.secondary,
-                      },
-                    ]}
-                  />
                 </View>
               </View>
             ))}
           </View>
-        </View>
+        )}
 
-        {/* Low Attendance Alerts */}
-        <View style={styles.card}>
-          <View style={styles.alertHeader}>
-            <MaterialIcons name="warning" size={24} color={Colors.warning} />
-            <Text style={styles.cardTitle}>Low Attendance Alerts</Text>
+        {(!dashboard?.activeSessions || dashboard.activeSessions.length === 0) && (
+          <View style={styles.card}>
+            <View style={styles.emptyState}>
+              <MaterialIcons name="bar-chart" size={48} color={Colors.border} />
+              <Text style={styles.emptyTitle}>No Data Yet</Text>
+              <Text style={styles.emptySub}>Start an attendance session to see live statistics.</Text>
+            </View>
           </View>
-          <View style={styles.alertList}>
-            {TEACHER_STATS.lowAttendanceStudents.map((student, index) => (
-              <View key={index} style={styles.alertItem}>
-                <View style={styles.alertIcon}>
-                  <MaterialIcons
-                    name="person"
-                    size={24}
-                    color={Colors.warning}
-                  />
-                </View>
-                <View style={styles.alertInfo}>
-                  <Text style={styles.alertName}>{student.name}</Text>
-                  <Text style={styles.alertId}>{student.id}</Text>
-                  <Text style={styles.alertSubject}>{student.subject}</Text>
-                </View>
-                <View style={styles.alertPercentage}>
-                  <Text style={[styles.alertValue, { color: Colors.error }]}>
-                    {student.attendance}%
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  centerContent: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -367,10 +349,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
     gap: Spacing.md,
   },
-  headerTitle: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-  },
+  headerTitle: { ...Typography.h2, color: Colors.textPrimary },
   card: {
     backgroundColor: Colors.surface,
     margin: Spacing.md,
@@ -378,41 +357,35 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3,
   },
-  cardTitle: {
-    ...Typography.h3,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-    marginBottom: Spacing.md,
-  },
-  overallContainer: {
-    alignItems: "center",
-    paddingVertical: Spacing.lg,
-  },
+  cardTitle: { ...Typography.h3, color: Colors.textPrimary, fontWeight: "600", marginBottom: Spacing.md },
+  overallContainer: { alignItems: "center", paddingVertical: Spacing.md },
   circularProgress: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 12,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 10,
     borderColor: Colors.primary,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.background,
   },
-  percentageValue: {
-    ...Typography.h1,
-    fontSize: 40,
-    color: Colors.primary,
-    fontWeight: "700",
+  percentageValue: { fontSize: 36, color: Colors.primary, fontWeight: "700" },
+  percentageLabel: { ...Typography.small, color: Colors.textSecondary, marginTop: 4 },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
-  percentageLabel: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-  },
+  statBox: { alignItems: "center", gap: 4 },
+  statNumber: { ...Typography.h2, fontWeight: "700" },
+  statLabel: { ...Typography.small, color: Colors.textSecondary },
   warningBox: {
     flexDirection: "row",
     backgroundColor: Colors.warning + "20",
@@ -420,136 +393,39 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: Spacing.sm,
     marginTop: Spacing.md,
-  },
-  warningText: {
-    ...Typography.body,
-    color: Colors.warning,
-    flex: 1,
-  },
-  chartContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "flex-end",
-    height: 200,
-    paddingVertical: Spacing.lg,
-  },
-  barContainer: {
     alignItems: "center",
-    flex: 1,
-    gap: Spacing.xs,
   },
-  barWrapper: {
-    width: 40,
-    height: 140,
-    justifyContent: "flex-end",
-  },
-  bar: {
-    width: "100%",
-    backgroundColor: Colors.primary,
-    borderRadius: 4,
-    minHeight: 20,
-  },
-  barLabel: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-    fontWeight: "600",
-  },
-  barValue: {
-    ...Typography.small,
-    color: Colors.textPrimary,
-    fontWeight: "700",
-  },
-  subjectList: {
-    gap: Spacing.lg,
-  },
-  subjectItem: {
-    gap: Spacing.sm,
-  },
-  subjectHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  subjectName: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-  },
-  subjectCourse: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  subjectPercentage: {
-    ...Typography.h3,
-    fontWeight: "700",
-  },
-  subjectInfo: {
+  warningText: { ...Typography.body, color: Colors.warning, flex: 1 },
+  courseBlock: { paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  courseHeader: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  courseName: { ...Typography.body, color: Colors.textPrimary, fontWeight: "600" },
+  courseFullName: { ...Typography.small, color: Colors.textSecondary },
+  coursePct: { ...Typography.h3, fontWeight: "700", minWidth: 45, textAlign: "right" },
+  progressBar: { height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: "hidden", marginTop: Spacing.sm },
+  progressFill: { height: "100%", borderRadius: 3 },
+  courseDetail: { marginTop: Spacing.sm, gap: 2 },
+  detailText: { ...Typography.small, color: Colors.textSecondary },
+  metricsGrid: { flexDirection: "row", gap: Spacing.md },
+  metricCard: { flex: 1, alignItems: "center", gap: Spacing.sm },
+  metricIcon: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  metricValue: { ...Typography.h2, color: Colors.textPrimary, fontWeight: "700" },
+  metricLabel: { ...Typography.small, color: Colors.textSecondary },
+  todayRow: { flexDirection: "row", justifyContent: "space-around" },
+  todayBox: { alignItems: "center", gap: Spacing.xs },
+  todayValue: { ...Typography.h2, color: Colors.textPrimary, fontWeight: "700" },
+  todayLabel: { ...Typography.small, color: Colors.textSecondary },
+  sessionItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.xs,
-  },
-  subjectText: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: Colors.border,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-  },
-  alertHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  alertList: {
     gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  alertItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.background,
-    padding: Spacing.md,
-    borderRadius: 8,
-    gap: Spacing.md,
-  },
-  alertIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.warning + "20",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  alertInfo: {
-    flex: 1,
-  },
-  alertName: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-  },
-  alertId: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  alertSubject: {
-    ...Typography.small,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  alertPercentage: {
-    alignItems: "center",
-  },
-  alertValue: {
-    ...Typography.h2,
-    fontWeight: "700",
-  },
+  sessionDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.error },
+  sessionName: { ...Typography.body, color: Colors.textPrimary, fontWeight: "600" },
+  sessionMeta: { ...Typography.small, color: Colors.textSecondary, marginTop: 2 },
+  emptyState: { alignItems: "center", gap: Spacing.md, paddingVertical: Spacing.lg },
+  emptyTitle: { ...Typography.h3, color: Colors.textPrimary },
+  emptySub: { ...Typography.body, color: Colors.textSecondary, textAlign: "center" },
 });
