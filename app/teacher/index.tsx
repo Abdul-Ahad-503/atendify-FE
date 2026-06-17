@@ -17,11 +17,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+
 export default function TeacherDashboardScreen() {
   const router = useRouter();
   const [meetings, setMeetings] = useState<TeacherMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [todaysMeetings, setTodaysMeetings] = useState<TeacherMeeting[]>([]);
 
   useFocusEffect(
     useCallback(() => {

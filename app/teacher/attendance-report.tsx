@@ -129,7 +129,7 @@ export default function AttendanceReportScreen() {
   };
 
   const handleBackHome = () => {
-    router.push("/teacher");
+    router.push("/(tabs)");
   };
 
   const renderStudentRecord = ({ item }: { item: MeetingAttendanceRecord }) => {

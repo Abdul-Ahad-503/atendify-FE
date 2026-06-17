@@ -67,12 +67,13 @@ export default function LoginScreen() {
 
       if (onboardingCompleted === "true") {
         registerPushToken();
+        router.replace("/(tabs)");
         // Route based on role
-        if (response.user.role === "teacher") {
-          router.replace("/teacher");
-        } else {
-          router.replace("/(tabs)");
-        }
+        // if (response.user.role === "teacher") {
+        //   router.replace("/teacher");
+        // } else {
+        //   router.replace("/(tabs)");
+        // }
       } else {
         registerPushToken();
         router.replace("/permissions/location");

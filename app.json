@@ -46,7 +46,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default"
+        }
+      ],
       [
         "expo-location",
         {
@@ -79,7 +86,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e68bcb0f-03ac-4e05-85a9-93525aa90b07"
+        "projectId": "4d524ebc-2bce-4bbc-a3ea-a3cdd5a91730"
       }
     }
   }

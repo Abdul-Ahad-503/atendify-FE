@@ -130,7 +130,7 @@ export default function MarkAttendanceScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} >
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -431,7 +431,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.secondary,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.small,
   },
   retryButtonText: {
     ...Typography.small,

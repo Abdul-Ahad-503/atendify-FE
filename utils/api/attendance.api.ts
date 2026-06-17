@@ -68,30 +68,30 @@ export const attendanceApi = {
   /**
    * Get student attendance history
    */
-  getStudentHistory: async (
-    studentId: string,
-    params?: { page?: number; limit?: number; courseId?: string },
-  ): Promise<{
-    attendance: AttendanceRecord[];
-    pagination: PaginationInfo;
-  }> => {
-    try {
-      const response = await apiClient.get<
-        ApiResponse<{
-          attendance: AttendanceRecord[];
-          pagination: PaginationInfo;
-        }>
-      >(`/attendance/student/${studentId}/history`, { params });
+  // getStudentHistory: async (
+  //   studentId: string,
+  //   params?: { page?: number; limit?: number; courseId?: string },
+  // ): Promise<{
+  //   attendance: AttendanceRecord[];
+  //   pagination: PaginationInfo;
+  // }> => {
+  //   try {
+  //     const response = await apiClient.get<
+  //       ApiResponse<{
+  //         attendance: AttendanceRecord[];
+  //         pagination: PaginationInfo;
+  //       }>
+  //     >(`/attendance/student/${studentId}/history`, { params });
 
-      if (response.data.success && response.data.data) {
-        return response.data.data;
-      }
+  //     if (response.data.success && response.data.data) {
+  //       return response.data.data;
+  //     }
 
-      throw new Error("Invalid response from server");
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  },
+  //     throw new Error("Invalid response from server");
+  //   } catch (error) {
+  //     throw new Error(handleApiError(error));
+  //   }
+  // },
 
   /**
    * Get student attendance percentages for all courses
@@ -369,30 +369,27 @@ export const attendanceApi = {
       throw new Error(handleApiError(error));
     }
   },
-  checkActiveSession: async (): Promise<{
-    activeSession: {
-      meetingId: string;
-      courseName: string;
-      courseCode: string;
-      roomNo: string;
-      timeStart: string;
-      timeEnd: string;
-    } | null;
+  checkActiveSession: async (
+    meetingId: string,
+  ): Promise<{
+    isActive: boolean;
+    sessionId: string | null;
   }> => {
     try {
       const response = await apiClient.get<
         ApiResponse<{
-          activeSession: any | null;
+          isActive: boolean;
+          sessionId: string | null;
         }>
-      >(`/attendance/active-sessions`);
+      >(`/attendance/active-session/${meetingId}`); // <- add meetingId here
 
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
 
-      return { activeSession: null };
+      return { isActive: false, sessionId: null };
     } catch (error) {
-      return { activeSession: null };
+      return { isActive: false, sessionId: null };
     }
   },
 

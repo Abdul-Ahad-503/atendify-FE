@@ -7,6 +7,7 @@ import {
   TeacherDashboard as TeacherDashboardType,
   User,
 } from "@/utils/api";
+import { TeacherMeeting } from "@/utils/api/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -26,6 +27,7 @@ export default function HomeScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [todaysMeetings, setTodaysMeetings] = useState<TeacherMeeting[]>([]);
 
   useEffect(() => {
     loadUser();
@@ -88,6 +90,52 @@ function StudentDashboard({ user }: { user: User }) {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
+  const pollingRef = useRef<any>(null);
+  const notifiedSessions = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Start polling when dashboard loads
+    pollingRef.current = setInterval(async () => {
+      if (!dashboardData?.todayClasses) return;
+
+      for (const classItem of dashboardData.todayClasses) {
+        const meetingId = classItem.id;
+        if (!meetingId || notifiedSessions.current.has(meetingId)) continue;
+
+        try {
+          const result = await attendanceApi.checkActiveSession(meetingId);
+          if (result.isActive) {
+            notifiedSessions.current.add(meetingId); // don't alert twice
+            Alert.alert(
+              "📋 Attendance Started",
+              `Mark attendance for ${
+                typeof classItem.course === "object"
+                  ? classItem.course.courseName
+                  : "your class"
+              }`,
+              [
+                { text: "Later", style: "cancel" },
+                {
+                  text: "Mark Now",
+                  onPress: () =>
+                    router.push({
+                      pathname: "/student/mark-attendance",
+                      params: { meetingId },
+                    }),
+                },
+              ],
+            );
+          }
+        } catch (error) {
+          // silently ignore polling errors
+        }
+      }
+    }, 10000); // poll every 10 seconds
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [dashboardData]); // restart when dashboard data loads
   useEffect(() => {
     loadDashboard();
   }, []);
@@ -439,6 +487,7 @@ function TeacherDashboard({ user }: { user: User }) {
     useState<TeacherDashboardType | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [todaysMeetings, setTodaysMeetings] = useState<TeacherMeeting[]>([]);
   const router = useRouter();
 
   const pollingRef = useRef<any>(null);
@@ -494,8 +543,12 @@ function TeacherDashboard({ user }: { user: User }) {
 
   const loadDashboard = async () => {
     try {
-      const data = await dashboardApi.getTeacherDashboard();
+      const [data, meetingsData] = await Promise.all([
+        dashboardApi.getTeacherDashboard(),
+        attendanceApi.fetchTeacherMeetings(),
+      ]);
       setDashboardData(data);
+      setTodaysMeetings(meetingsData || []);
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {
@@ -526,8 +579,7 @@ function TeacherDashboard({ user }: { user: User }) {
   };
   const handleCheckAttendance = async (meetingId: string) => {
     try {
-      const result = await attendanceApi.checkActiveSession(meetingId);
-
+      const result = await attendanceApi.checkActiveSession(meetingId); // add meetingId
       if (result.isActive) {
         router.push({
           pathname: "/student/mark-attendance",
@@ -543,30 +595,46 @@ function TeacherDashboard({ user }: { user: User }) {
       Alert.alert("Error", "Could not check session status.");
     }
   };
-  const handleOpenClassDetails = (
-    classItem: TeacherDashboardType["todayClasses"][number],
-  ) => {
-    const course =
-      typeof classItem.course === "object" ? classItem.course : null;
-    const subject =
-      typeof classItem.subject === "object" ? classItem.subject : null;
+  // const handleOpenClassDetails = (
+  //   classItem: TeacherDashboardType["todayClasses"][number],
+  // ) => {
+  //   const course =
+  //     typeof classItem.course === "object" ? classItem.course : null;
+  //   const subject =
+  //     typeof classItem.subject === "object" ? classItem.subject : null;
 
+  //   router.push({
+  //     pathname: "/teacher/class-detail",
+  //     params: {
+  //       classId: classItem.id,
+  //       courseId: course?.id ?? "",
+  //       courseName: course?.courseName ?? "Class",
+  //       courseCode: course?.courseCode ?? "",
+  //       startTime: classItem.startTime,
+  //       endTime: classItem.endTime,
+  //       roomNumber: classItem.room?.roomNumber ?? "",
+  //       semester: String(course?.semester ?? ""),
+  //       programCode: classItem.programCode ?? "",
+  //       section: classItem.section ?? "",
+  //       dayOfWeek: String(classItem.dayOfWeek ?? ""),
+  //       subjectName: subject?.subjectName ?? "",
+  //       subjectCode: subject?.subjectCode ?? "",
+  //     },
+  //   });
+  // };
+  const handleStartAttendance = (meeting: TeacherMeeting) => {
     router.push({
-      pathname: "/teacher/class-detail",
+      pathname: "/teacher/start-session",
       params: {
-        classId: classItem.id,
-        courseId: course?.id ?? "",
-        courseName: course?.courseName ?? "Class",
-        courseCode: course?.courseCode ?? "",
-        startTime: classItem.startTime,
-        endTime: classItem.endTime,
-        roomNumber: classItem.room?.roomNumber ?? "",
-        semester: String(course?.semester ?? ""),
-        programCode: classItem.programCode ?? "",
-        section: classItem.section ?? "",
-        dayOfWeek: String(classItem.dayOfWeek ?? ""),
-        subjectName: subject?.subjectName ?? "",
-        subjectCode: subject?.subjectCode ?? "",
+        meetingId: meeting.meetingId,
+        courseCode: meeting.courseCode,
+        courseName: meeting.courseName,
+        timeStart: meeting.timeStart,
+        timeEnd: meeting.timeEnd,
+        roomNo: meeting.roomNo,
+        enrolledCount: meeting.enrolledCount.toString(),
+        section: meeting.section,
+        semester: meeting.semester.toString(),
       },
     });
   };
@@ -683,7 +751,7 @@ function TeacherDashboard({ user }: { user: User }) {
           )}
 
         {/* Today's Classes */}
-        {dashboardData?.todayClasses &&
+        {/* {dashboardData?.todayClasses &&
           dashboardData.todayClasses.length > 0 && (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
@@ -730,7 +798,49 @@ function TeacherDashboard({ user }: { user: User }) {
                 ))}
               </View>
             </View>
-          )}
+          )} */}
+
+        {todaysMeetings.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="today" size={24} color={Colors.secondary} />
+              <Text style={styles.cardTitle}>Today's Classes</Text>
+            </View>
+            <View style={styles.classList}>
+              {todaysMeetings.map((meeting) => (
+                <View key={meeting.meetingId} style={styles.classListItem}>
+                  <View style={styles.classTime}>
+                    <Text style={styles.classTimeText}>
+                      {formatTime(meeting.timeStart)}
+                    </Text>
+                    <View style={styles.classTimeLine} />
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.classCard,
+                      { borderLeftColor: Colors.primary },
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => handleStartAttendance(meeting)}
+                  >
+                    <Text style={styles.classCardTitle}>
+                      {meeting.courseName}
+                    </Text>
+                    <Text style={styles.classCardInfo}>
+                      Location: {meeting.roomNo}
+                    </Text>
+                    <Text style={styles.classCardInfo}>
+                      Semester: {meeting.semester} • Section {meeting.section}
+                    </Text>
+                    <Text style={styles.classCardInfo}>
+                      {meeting.enrolledCount} Students
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Quick Stats */}
         {dashboardData?.stats && (
