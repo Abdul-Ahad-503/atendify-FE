@@ -1,5 +1,5 @@
 import { BorderRadius, Colors, Spacing, Typography } from "@/constants/theme";
-import { authApi, STORAGE_KEYS } from "@/utils/api";
+import { authApi, STORAGE_KEYS, apiClient } from "@/utils/api";
 import type { RegisterRequest } from "@/utils/api/types";
 import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,59 +20,21 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Types
 type Role = "student" | "teacher";
 
 type Department = {
-  id: string;
+  _id: string;
   name: string;
   code: string;
 };
 
 type ProgramOption = {
-  id: string;
+  _id: string;
   name: string;
   code: string;
-  departmentId: string;
+  departmentId: string | { _id: string; name: string; code: string };
 };
-
-const SAMPLE_DEPARTMENTS: Department[] = [
-  { id: "CS", name: "Computer Science", code: "CS" },
-  { id: "DEE", name: "Electrical Engineering", code: "DEE" },
-  { id: "DBA", name: "Business Administration", code: "DBA" },
-];
-
-const SAMPLE_PROGRAMS: ProgramOption[] = [
-  {
-    id: "BSCS",
-    name: "BS Computer Science",
-    code: "BSCS",
-    departmentId: "CS",
-  },
-  {
-    id: "BSAI",
-    name: "BS Artificial Intelligence",
-    code: "BSAI",
-    departmentId: "CS",
-  },
-  {
-    id: "BSSE",
-    name: "BS Software Engineering",
-    code: "BSSE",
-    departmentId: "CS",
-  },
-  {
-    id: "BSEE",
-    name: "BS Electrical Engineering",
-    code: "BSEE",
-    departmentId: "DEE",
-  },
-  {
-    id: "BBA",
-    name: "Bachelor of Business Administration",
-    code: "BBA",
-    departmentId: "DBA",
-  },
-];
 
 const SECTION_OPTIONS = ["A", "B", "C"];
 const SHIFT_OPTIONS: Array<"MORNING" | "EVENING"> = ["MORNING", "EVENING"];
@@ -118,7 +80,7 @@ export default function SignupScreen() {
     loadMeta();
   }, []);
 
-  // When department changes, clear program selection (optional UX)
+  // When department changes, clear program selection
   useEffect(() => {
     setProgramId("");
   }, [departmentId]);
@@ -126,11 +88,26 @@ export default function SignupScreen() {
   const loadMeta = async () => {
     setLoadingMeta(true);
     try {
-      setDepartments(SAMPLE_DEPARTMENTS);
-      setPrograms(SAMPLE_PROGRAMS);
+      const [deptRes, progRes] = await Promise.all([
+        apiClient.get("/departments"),
+        apiClient.get("/programs"),
+      ]);
+      if (deptRes.data.success) setDepartments(deptRes.data.data.departments || []);
+      if (progRes.data.success) setPrograms(progRes.data.data.programs || []);
     } catch (e) {
-      setDepartments(SAMPLE_DEPARTMENTS);
-      setPrograms(SAMPLE_PROGRAMS);
+      console.warn("Failed to load meta data, using fallback:", e);
+      setDepartments([
+        { _id: "CS", name: "Computer Science", code: "CS" },
+        { _id: "DEE", name: "Electrical Engineering", code: "DEE" },
+        { _id: "DBA", name: "Business Administration", code: "DBA" },
+      ]);
+      setPrograms([
+        { _id: "BSCS", name: "BS Computer Science", code: "BSCS", departmentId: "CS" },
+        { _id: "BSAI", name: "BS Artificial Intelligence", code: "BSAI", departmentId: "CS" },
+        { _id: "BSSE", name: "BS Software Engineering", code: "BSSE", departmentId: "CS" },
+        { _id: "BSEE", name: "BS Electrical Engineering", code: "BSEE", departmentId: "DEE" },
+        { _id: "BBA", name: "Bachelor of Business Administration", code: "BBA", departmentId: "DBA" },
+      ]);
     } finally {
       setLoadingMeta(false);
     }
@@ -172,7 +149,9 @@ export default function SignupScreen() {
     setLoading(true);
     const selectedDepartment = departments.find((d) => d.code === departmentId);
 
-    const selectedProgram = programs.find((p) => p.code === programId);
+    // Send the code value (e.g. "CS") — backend resolveDepartmentRef resolves it
+    // send _id if it's a valid ObjectId, otherwise send code
+    const deptValue = selectedDepartment?._id?.length === 24 ? selectedDepartment._id : selectedDepartment?.code || departmentId;
 
     try {
       const userData: RegisterRequest = {
@@ -180,12 +159,12 @@ export default function SignupScreen() {
         email: email.trim().toLowerCase(),
         password,
         role,
-        departmentId, // code (e.g. CS) - backend resolves it
+        departmentId: deptValue,
         department: selectedDepartment?.name || "",
 
         ...(role === "student"
           ? {
-              programId, // code (e.g. BSCS) - backend resolves it
+              programId, // code (e.g. BSCS) — backend resolveProgramRef resolves it
               program: selectedProgram?.name || "",
               rollNumber: rollNumber.trim(),
               studentId: rollNumber.trim(),
@@ -228,7 +207,10 @@ export default function SignupScreen() {
 
   const filteredPrograms =
     departmentId && programs.length
-      ? programs.filter((p) => String(p.departmentId) === String(departmentId))
+      ? programs.filter((p) => {
+          const deptId = typeof p.departmentId === "object" ? p.departmentId?._id || p.departmentId?.code : p.departmentId;
+          return String(deptId) === String(departmentId);
+        })
       : programs;
 
   const departmentPickerItems = loadingMeta
@@ -255,7 +237,7 @@ export default function SignupScreen() {
           />,
           ...departments.map((d) => (
             <Picker.Item
-              key={d.code}
+              key={d._id}
               label={`${d.name} (${d.code})`}
               value={d.code}
             />
@@ -286,7 +268,7 @@ export default function SignupScreen() {
           <Picker.Item key="select-program" label="Select Program" value="" />,
           ...filteredPrograms.map((p) => (
             <Picker.Item
-              key={p.code}
+              key={p._id}
               label={`${p.name} (${p.code})`}
               value={p.code}
             />
