@@ -90,6 +90,7 @@ function StudentDashboard({ user }: { user: User }) {
     useState<StudentDashboardType | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeSessionIds, setActiveSessionIds] = useState<string[]>([]);
   const router = useRouter();
 
   // Auto-polling removed — students rely on push notifications
@@ -102,8 +103,12 @@ function StudentDashboard({ user }: { user: User }) {
 
   const loadDashboard = async () => {
     try {
-      const data = await dashboardApi.getStudentDashboard();
+      const [data, sessionIds] = await Promise.all([
+        dashboardApi.getStudentDashboard(),
+        attendanceApi.getStudentActiveSessions(),
+      ]);
       setDashboardData(data);
+      setActiveSessionIds(sessionIds);
     } catch (error) {
       console.error("Error loading dashboard:", error);
     } finally {
@@ -168,20 +173,38 @@ function StudentDashboard({ user }: { user: User }) {
           </View>
         </View>
 
+        {/* Live Sessions Banner */}
+        {activeSessionIds.length > 0 && (
+          <View style={styles.liveBanner}>
+            <View style={styles.liveBannerDot} />
+            <Text style={styles.liveBannerText}>
+              {activeSessionIds.length} active session{activeSessionIds.length > 1 ? 's' : ''} — tap "Mark Attendance" on the class card
+            </Text>
+          </View>
+        )}
+
         {/* Today's Classes */}
         {dashboardData?.todayClasses &&
         dashboardData.todayClasses.length > 0 ? (
-          dashboardData.todayClasses.map((classItem, index) => (
+          dashboardData.todayClasses.map((classItem, index) => {
+            const isActive = activeSessionIds.includes(classItem.id);
+            return (
             <View key={classItem.id} style={styles.card}>
               <View style={styles.cardHeader}>
                 <MaterialIcons
-                  name="schedule"
+                  name={isActive ? "play-circle-filled" : "schedule"}
                   size={24}
-                  color={Colors.primary}
+                  color={isActive ? Colors.success : Colors.primary}
                 />
                 <Text style={styles.cardTitle}>
-                  {index === 0 ? "Current/Next Class" : "Upcoming Class"}
+                  {isActive ? "Live Session" : index === 0 ? "Current/Next Class" : "Upcoming Class"}
                 </Text>
+                {isActive && (
+                  <View style={styles.liveBadge}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveText}>LIVE</Text>
+                  </View>
+                )}
               </View>
               <View style={styles.classInfo}>
                 <Text style={styles.className}>
@@ -231,48 +254,42 @@ function StudentDashboard({ user }: { user: User }) {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
-                  backgroundColor: Colors.primary,
+                  backgroundColor: isActive ? Colors.success : Colors.primary,
                   paddingVertical: 10,
                   borderRadius: 8,
                   marginTop: 12,
                 }}
-                onPress={async () => {
+                onPress={() => {
                   const meetingId = classItem.id;
                   const courseObj =
                     typeof classItem.course === "object" ? classItem.course : null;
-                  try {
-                    const result =
-                      await attendanceApi.checkActiveSession(meetingId);
-                    if (result.isActive) {
-                      router.push({
-                        pathname: "/student/mark-attendance",
-                        params: {
-                          meetingId,
-                          courseName: courseObj?.courseName || "",
-                          courseCode: courseObj?.courseCode || "",
-                          roomNo: classItem.room?.roomNumber || "",
-                          timeStart: classItem.startTime || "",
-                          timeEnd: classItem.endTime || "",
-                        },
-                      });
-                    } else {
-                      Alert.alert(
-                        "No Active Session",
-                        "Teacher has not started attendance yet.",
-                      );
-                    }
-                  } catch {
-                    Alert.alert("Error", "Could not check session status.");
+                  if (isActive) {
+                    router.push({
+                      pathname: "/student/mark-attendance",
+                      params: {
+                        meetingId,
+                        courseName: courseObj?.courseName || "",
+                        courseCode: courseObj?.courseCode || "",
+                        roomNo: classItem.room?.roomNumber || "",
+                        timeStart: classItem.startTime || "",
+                        timeEnd: classItem.endTime || "",
+                      },
+                    });
+                  } else {
+                    Alert.alert(
+                      "No Active Session",
+                      "Teacher has not started attendance yet.",
+                    );
                   }
                 }}
               >
                 <MaterialIcons name="check-circle" size={18} color="#fff" />
                 <Text style={{ color: "#fff", fontWeight: "600" }}>
-                  Check Attendance
+                  {isActive ? "Mark Attendance" : "Check Attendance"}
                 </Text>
               </TouchableOpacity>
             </View>
-          ))
+          );})
         ) : (
           <View style={styles.card}>
             <Text style={styles.noDataText}>
@@ -401,8 +418,11 @@ function StudentDashboard({ user }: { user: User }) {
                   <View style={styles.courseInfo}>
                     <Text style={styles.courseName}>
                       {typeof item.course === "object"
-                        ? item.course.courseCode
+                        ? item.course.courseName
                         : "Course"}
+                    </Text>
+                    <Text style={styles.courseSubText}>
+                      {typeof item.course === "object" ? item.course.courseCode : ""}
                     </Text>
                     <Text style={styles.courseAttendance}>
                       {item.classesAttended}/{item.totalClasses} classes
@@ -999,7 +1019,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   courseName: {
-    ...Typography.body,
+    ...Typography.h3,
     color: Colors.textPrimary,
     fontWeight: "600",
     marginBottom: Spacing.xs,
@@ -1007,6 +1027,11 @@ const styles = StyleSheet.create({
   courseAttendance: {
     ...Typography.small,
     color: Colors.textSecondary,
+  },
+  courseSubText: {
+    ...Typography.extraSmall,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
   },
   coursePercentage: {
     ...Typography.h3,
@@ -1116,5 +1141,29 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
     padding: Spacing.lg,
+  },
+  liveBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    backgroundColor: Colors.success + "15",
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.success + "40",
+  },
+  liveBannerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.success,
+  },
+  liveBannerText: {
+    flex: 1,
+    ...Typography.small,
+    color: Colors.textPrimary,
+    fontWeight: "500",
   },
 });

@@ -225,8 +225,8 @@ export default function AttendanceReportScreen() {
             {/* Meeting Info */}
             <View style={styles.meetingCard}>
               <View>
-                <Text style={styles.courseCode}>{courseCode}</Text>
-                <Text style={styles.courseName}>{courseName}</Text>
+                <Text style={styles.courseCode}>{courseName}</Text>
+                <Text style={styles.courseName}>{courseCode}</Text>
               </View>
               <View style={styles.meetingMeta}>
                 <Text style={styles.metaText}>{scheduleText}</Text>
@@ -613,3 +613,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+

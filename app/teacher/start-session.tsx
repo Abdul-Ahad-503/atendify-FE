@@ -40,6 +40,7 @@ export default function StartSessionScreen() {
   const [gpsStatus, setGpsStatus] = useState<
     "idle" | "requesting" | "ready" | "error"
   >("idle");
+  const [radiusMeters, setRadiusMeters] = useState(10);
 
   const meetingId = getParam(params.meetingId) || "";
   const courseCode = getParam(params.courseCode) || "";
@@ -117,6 +118,7 @@ export default function StartSessionScreen() {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         },
+        radiusMeters,
         details: {
           courseName,
           courseCode,
@@ -136,7 +138,7 @@ export default function StartSessionScreen() {
       // Success - navigate to live session screen
       Alert.alert(
         "Success",
-        `Attendance started!\n${response.enrolledStudentsCount} students notified`,
+        `Attendance started!\nRadius: ${response.radiusMeters}m\n${response.enrolledStudentsCount} students notified`,
         [
           {
             text: "OK",
@@ -156,6 +158,7 @@ export default function StartSessionScreen() {
                   enrolledCount: enrolledCount.toString(),
                   enrolledStudentsCount:
                     response.enrolledStudentsCount.toString(),
+                  radiusMeters: response.radiusMeters.toString(),
                 },
               });
             },
@@ -356,6 +359,53 @@ export default function StartSessionScreen() {
           )}
         </View>
 
+        {/* Radius Selector Card */}
+        <View style={styles.radiusCard}>
+          <View style={styles.radiusHeader}>
+            <MaterialIcons name="near-me" size={20} color={Colors.secondary} />
+            <Text style={styles.radiusTitle}>Proximity Radius</Text>
+          </View>
+          <Text style={styles.radiusValue}>{radiusMeters} meters</Text>
+          <View style={styles.radiusSliderRow}>
+            <TouchableOpacity
+              style={styles.radiusAdjustButton}
+              onPress={() => setRadiusMeters(Math.max(5, radiusMeters - 5))}
+            >
+              <MaterialIcons name="remove" size={20} color={Colors.secondary} />
+            </TouchableOpacity>
+            <View style={styles.radiusPresets}>
+              {[5, 10, 15, 20, 25, 30].map((val) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[
+                    styles.radiusPreset,
+                    radiusMeters === val && styles.radiusPresetActive,
+                  ]}
+                  onPress={() => setRadiusMeters(val)}
+                >
+                  <Text
+                    style={[
+                      styles.radiusPresetText,
+                      radiusMeters === val && styles.radiusPresetTextActive,
+                    ]}
+                  >
+                    {val}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.radiusAdjustButton}
+              onPress={() => setRadiusMeters(Math.min(30, radiusMeters + 5))}
+            >
+              <MaterialIcons name="add" size={20} color={Colors.secondary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.radiusHint}>
+            Students must be within {radiusMeters}m of your location to be marked present.
+          </Text>
+        </View>
+
         {/* Info Box */}
         <View style={styles.infoBox}>
           <MaterialIcons name="info" size={20} color={Colors.secondary} />
@@ -467,7 +517,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   courseName: {
-    ...Typography.body,
+    ...Typography.small,
     color: Colors.textSecondary,
     marginTop: Spacing.xs,
   },
@@ -593,5 +643,77 @@ const styles = StyleSheet.create({
     ...Typography.small,
     color: Colors.secondary,
     fontWeight: "600",
+  },
+  radiusCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.card,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  radiusHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  radiusTitle: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+  },
+  radiusValue: {
+    ...Typography.h2,
+    color: Colors.secondary,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  radiusSliderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  radiusAdjustButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.secondary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radiusPresets: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  radiusPreset: {
+    width: 40,
+    height: 36,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radiusPresetActive: {
+    borderColor: Colors.secondary,
+    backgroundColor: Colors.secondary,
+  },
+  radiusPresetText: {
+    ...Typography.small,
+    color: Colors.textPrimary,
+    fontWeight: "600",
+  },
+  radiusPresetTextActive: {
+    color: Colors.surface,
+  },
+  radiusHint: {
+    ...Typography.extraSmall,
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
 });

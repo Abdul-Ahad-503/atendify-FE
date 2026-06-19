@@ -397,6 +397,25 @@ export const attendanceApi = {
   },
 
   /**
+   * Get all active session IDs for the student's today's classes
+   */
+  getStudentActiveSessions: async (): Promise<string[]> => {
+    try {
+      const response = await apiClient.get<
+        ApiResponse<{ activeSessionIds: string[] }>
+      >("/attendance/student/active-sessions");
+
+      if (response.data.success && response.data.data) {
+        return response.data.data.activeSessionIds;
+      }
+
+      return [];
+    } catch (error) {
+      return [];
+    }
+  },
+
+  /**
    * Get student attendance history
    */
   getStudentHistory: async (params?: {

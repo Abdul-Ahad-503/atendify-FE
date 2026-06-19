@@ -100,7 +100,6 @@ export default function MarkAttendanceScreen() {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         },
-        radiusMeters: 10,
       });
 
       // Success - navigate to result screen with real API data
@@ -259,8 +258,8 @@ export default function MarkAttendanceScreen() {
         <View style={styles.infoBox}>
           <MaterialIcons name="info" size={20} color={Colors.secondary} />
           <Text style={styles.infoText}>
-            Your attendance will be marked automatically based on your location.
-            You must be within 10 meters of the classroom.
+            Your attendance will be marked based on your location relative to
+            the proximity radius set by your teacher.
           </Text>
         </View>
 
@@ -366,7 +365,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   courseName: {
-    ...Typography.body,
+    ...Typography.small,
     color: Colors.textSecondary,
     marginTop: Spacing.xs,
   },

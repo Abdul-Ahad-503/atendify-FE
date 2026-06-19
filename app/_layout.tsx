@@ -136,7 +136,7 @@ export default function RootLayout() {
           <Stack.Screen name="help-support" options={{ headerShown: false }} />
           <Stack.Screen name="about" options={{ headerShown: false }} />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -165,8 +165,8 @@ function StudentStatistics() {
                 >
                   <View style={styles.courseHeader}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.courseName}>{courseCode}</Text>
-                      <Text style={styles.courseFullName}>{courseName}</Text>
+                      <Text style={styles.courseName}>{courseName}</Text>
+                      <Text style={styles.courseFullName}>{courseCode}</Text>
                     </View>
                     <Text style={[styles.coursePct, { color: isCritical ? Colors.error : Colors.success }]}>
                       {pct}%

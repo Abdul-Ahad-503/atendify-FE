@@ -92,7 +92,7 @@ export default function TeacherDashboardScreen() {
       <View style={styles.cardContent}>
         <View style={styles.leftContent}>
           <View style={styles.courseHeader}>
-            <Text style={styles.courseCode}>{item.courseCode}</Text>
+            <Text style={styles.courseCode}>{item.courseName}</Text>
             <View style={styles.timeBadge}>
               <MaterialIcons
                 name="access-time"
@@ -105,7 +105,7 @@ export default function TeacherDashboardScreen() {
             </View>
           </View>
           <Text style={styles.courseName} numberOfLines={2}>
-            {item.courseName}
+            {item.courseCode}
           </Text>
           <View style={styles.meta}>
             <MaterialIcons name="room" size={16} color={Colors.textSecondary} />
@@ -286,9 +286,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   courseName: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-    fontWeight: "600",
+    ...Typography.small,
+    color: Colors.textSecondary,
     marginBottom: Spacing.sm,
   },
   meta: {

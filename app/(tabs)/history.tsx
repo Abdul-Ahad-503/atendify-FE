@@ -466,10 +466,10 @@ export default function HistoryScreen() {
                 </View>
 
                 <Text style={styles.subjectName}>
-                  {isRealData ? courseCode : subjectName}
+                  {isRealData ? subjectName : courseCode}
                 </Text>
                 {isRealData && (
-                  <Text style={styles.courseFullName}>{subjectName}</Text>
+                  <Text style={styles.courseFullName}>{courseCode}</Text>
                 )}
 
                 {userRole === "student" ? (

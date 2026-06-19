@@ -99,7 +99,7 @@ export default function AttendanceStatisticsScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Attendance Statistics</Text>
           <Text style={styles.courseInfo}>
-            {courseCode} - {courseName}
+            {courseName} - {courseCode}
           </Text>
         </View>
       </View>

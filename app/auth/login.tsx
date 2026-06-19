@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -95,10 +96,9 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <MaterialIcons
-              name="location-on"
-              size={48}
-              color={Colors.primary}
+            <Image
+              source={require("@/assets/images/atendify.png")}
+              style={styles.logoImage}
             />
           </View>
 
@@ -269,6 +269,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 25,
     elevation: 5,
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
+    resizeMode: "contain",
   },
   appName: {
     ...Typography.h1,

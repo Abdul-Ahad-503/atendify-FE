@@ -293,6 +293,7 @@ export interface TeacherMeeting {
 export interface StartAttendanceSessionResponse {
   sessionId: string;
   meetingId: string;
+  radiusMeters: number;
   enrolledStudentsCount: number;
   studentsToNotify: Array<{
     studentId: string;
@@ -343,6 +344,7 @@ export interface StartTeacherSessionRequest {
     latitude: number;
     longitude: number;
   };
+  radiusMeters?: number;
   details: {
     courseName: string;
     courseCode: string;

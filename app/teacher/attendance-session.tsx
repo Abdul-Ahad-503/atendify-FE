@@ -173,8 +173,8 @@ export default function AttendanceSessionScreen() {
         <View style={styles.infoCard}>
         <View style={styles.infoHeader}>
           <View>
-            <Text style={styles.courseCode}>{courseCode}</Text>
-            <Text style={styles.courseName}>{courseName}</Text>
+            <Text style={styles.courseCode}>{courseName}</Text>
+            <Text style={styles.courseName}>{courseCode}</Text>
           </View>
           <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
@@ -609,3 +609,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+

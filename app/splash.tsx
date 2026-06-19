@@ -1,17 +1,14 @@
-import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SplashScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    // Simulate loading/initialization
     const timer = setTimeout(() => {
-      // Navigate to login screen after splash
       router.replace("/auth/login");
     }, 3000);
 
@@ -22,23 +19,21 @@ export default function SplashScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Logo Container */}
       <View style={styles.logoContainer}>
-        <MaterialIcons name="location-on" size={48} color="#2563EB" />
+        <Image
+          source={require("@/assets/images/atendify.png")}
+          style={styles.logoImage}
+        />
       </View>
 
-      {/* App Name */}
       <Text style={styles.appName}>Atendify</Text>
 
-      {/* Tagline */}
       <Text style={styles.tagline}>Location-Based Attendance</Text>
 
-      {/* Loading Indicator */}
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FFFFFF" />
       </View>
 
-      {/* Version */}
       <Text style={styles.version}>v1.0.2 - Initializing...</Text>
     </SafeAreaView>
   );
@@ -68,6 +63,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
+    resizeMode: "contain",
   },
   appName: {
     fontSize: 32,

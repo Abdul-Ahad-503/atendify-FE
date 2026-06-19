@@ -70,7 +70,7 @@ export default function AttendanceHistoryScreen() {
           <View style={styles.leftContent}>
             <View style={styles.courseHeader}>
               <Text style={styles.courseCode}>
-                {item.offeringId?.courseId?.code || "N/A"}
+                {item.offeringId?.courseId?.name || "Course"}
               </Text>
               <View style={styles.dateBadge}>
                 <MaterialIcons
@@ -84,7 +84,7 @@ export default function AttendanceHistoryScreen() {
               </View>
             </View>
             <Text style={styles.courseName} numberOfLines={2}>
-              {item.offeringId?.courseId?.name || "Course"}
+              {item.offeringId?.courseId?.code || "N/A"}
             </Text>
             <View style={styles.meta}>
               <MaterialIcons
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   courseCode: {
     ...Typography.h3,
     color: Colors.textPrimary,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   dateBadge: {
     flexDirection: "row",

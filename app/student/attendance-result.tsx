@@ -207,9 +207,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   className: {
-    ...Typography.body,
+    ...Typography.small,
     color: Colors.textSecondary,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
   },
   distanceCard: {
     backgroundColor: Colors.surface,
