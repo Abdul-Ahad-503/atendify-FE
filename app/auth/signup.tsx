@@ -148,6 +148,7 @@ export default function SignupScreen() {
 
     setLoading(true);
     const selectedDepartment = departments.find((d) => d.code === departmentId);
+    const selectedProgram = programs.find((p) => p.code === programId);
 
     // Send the code value (e.g. "CS") — backend resolveDepartmentRef resolves it
     // send _id if it's a valid ObjectId, otherwise send code
@@ -208,7 +209,7 @@ export default function SignupScreen() {
   const filteredPrograms =
     departmentId && programs.length
       ? programs.filter((p) => {
-          const deptId = typeof p.departmentId === "object" ? p.departmentId?._id || p.departmentId?.code : p.departmentId;
+          const deptId = typeof p.departmentId === "object" ? p.departmentId?.code || p.departmentId?._id : p.departmentId;
           return String(deptId) === String(departmentId);
         })
       : programs;

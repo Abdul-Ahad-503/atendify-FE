@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Atendify",
-    "slug": "Location Based Attendance Management System",
+    "slug": "Atendify",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/atendify.png",
@@ -86,7 +86,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "4d524ebc-2bce-4bbc-a3ea-a3cdd5a91730"
+        "projectId": "3a295411-13d2-428e-a93e-dc9e75ae58ea"
       }
     }
   }
