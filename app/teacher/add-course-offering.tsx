@@ -82,9 +82,18 @@ export default function AddCourseOfferingScreen() {
       ]);
       setUser(userData);
       const termsList: Term[] = termsRes.data?.data?.terms || [];
-      if (termsList.length > 0) {
-        setTerms(termsList);
-        const act = termsList.find((t: Term) => t.isActive) || termsList[0];
+      // Deduplicate by lowercase name — keep the first occurrence (preferring active)
+      const seen = new Map<string, Term>();
+      for (const t of termsList) {
+        const key = t.name.toLowerCase();
+        if (!seen.has(key) || (t.isActive && !seen.get(key)!.isActive)) {
+          seen.set(key, t);
+        }
+      }
+      const uniqueTerms = Array.from(seen.values());
+      if (uniqueTerms.length > 0) {
+        setTerms(uniqueTerms);
+        const act = uniqueTerms.find((t: Term) => t.isActive) || uniqueTerms[0];
         if (act) setSelectedTermId(act._id);
       } else {
         setTerms([
