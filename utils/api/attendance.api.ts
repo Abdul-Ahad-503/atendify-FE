@@ -423,8 +423,10 @@ export const attendanceApi = {
     offeringId?: string;
     startDate?: string;
     endDate?: string;
+    page?: number;
+    limit?: number;
   }): Promise<{
-    total: number;
+    pagination: PaginationInfo;
     records: Array<{
       _id: string;
       status: string;
@@ -448,7 +450,7 @@ export const attendanceApi = {
     try {
       const response = await apiClient.get<
         ApiResponse<{
-          total: number;
+          pagination: PaginationInfo;
           records: any[];
         }>
       >(`/attendance/student/history`, { params });
@@ -470,14 +472,16 @@ export const attendanceApi = {
     startDate?: string;
     endDate?: string;
     offeringId?: string;
+    page?: number;
+    limit?: number;
   }): Promise<{
-    total: number;
+    pagination: PaginationInfo;
     records: any[];
   }> => {
     try {
       const response = await apiClient.get<
         ApiResponse<{
-          total: number;
+          pagination: PaginationInfo;
           records: any[];
         }>
       >(`/attendance/teacher/history`, { params });
